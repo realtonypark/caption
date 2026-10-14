@@ -71,8 +71,10 @@ export const Reader = ({
   );
   const activeInsight = lens ? findInsight(insights, lens.passage) : undefined;
   const initialParagraph = initialInsight?.passage.ranges[0].paragraph;
-  const openLens = (passage: Passage, mode: "actions" | "note" = "actions") =>
+  const openLens = (passage: Passage, mode: "actions" | "note" = "actions") => {
+    setActiveId(undefined);
     setLens({ passage, mode, key: crypto.randomUUID() });
+  };
   const openNote = (insight: Insight) => {
     openLens(insight.passage, "note");
     setActiveId(`note-${insight.id}`);
@@ -407,13 +409,28 @@ export const Reader = ({
                   "[data-paragraph]",
                 ) ?? [],
               );
-              const visible = paragraphs.find(
-                (paragraph) => paragraph.getBoundingClientRect().bottom > 120,
-              );
+              const positions = paragraphs.map((paragraph) => ({
+                paragraph,
+                rect: paragraph.getBoundingClientRect(),
+              }));
+              const distance = (rect: DOMRect) =>
+                Math.max(120 - rect.bottom, rect.top - window.innerHeight, 0);
+              const visible =
+                positions.find(
+                  ({ rect }) =>
+                    rect.bottom > 120 && rect.top < window.innerHeight,
+                ) ??
+                positions.reduce<(typeof positions)[number] | undefined>(
+                  (nearest, position) =>
+                    !nearest || distance(position.rect) < distance(nearest.rect)
+                      ? position
+                      : nearest,
+                  undefined,
+                );
               ask(
                 wholeParagraph(
                   reading,
-                  Number(visible?.dataset.paragraph ?? 0),
+                  Number(visible?.paragraph.dataset.paragraph ?? 0),
                 ),
                 "ask",
                 question,

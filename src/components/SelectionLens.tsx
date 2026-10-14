@@ -413,15 +413,12 @@ export const SelectionLens = ({
                   : "A note, in your own words"
               }
               onKeyDown={(event) => {
+                if (event.nativeEvent.isComposing) return;
                 if (event.key === "Escape") {
                   event.preventDefault();
                   event.stopPropagation();
                   close();
-                } else if (
-                  event.key === "Enter" &&
-                  !event.shiftKey &&
-                  !event.nativeEvent.isComposing
-                ) {
+                } else if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
                   keepNote();
                   close();
@@ -459,6 +456,7 @@ export const SelectionLens = ({
                   short ? "Ask about this word" : "Ask about this passage"
                 }
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
                   if (event.key === "Escape") {
                     event.preventDefault();
                     event.stopPropagation();

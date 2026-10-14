@@ -294,6 +294,21 @@ it("opens highlighted answers on mobile and keeps every thread and personal note
   expect(screen.getByText("Second question?")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Previous answer" }));
   expect(screen.getByText("First question?")).toBeInTheDocument();
+  const text = screen.getByRole("button", {
+    name: `Open saved insight: ${passage.quote}`,
+  });
+  const range = document.createRange();
+  range.setStart(text.firstChild!, 0);
+  range.setEnd(text.firstChild!, 6);
+  window.getSelection()!.addRange(range);
+  fireEvent.mouseUp(text);
+  expect(screen.getByRole("toolbar")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("dialog", { name: "Passage answer" }),
+  ).not.toBeInTheDocument();
+  window.getSelection()!.removeAllRanges();
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  fireEvent.click(text);
   fireEvent.click(screen.getByRole("button", { name: "Close answer" }));
   Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
     value: vi.fn(),
@@ -315,4 +330,76 @@ it("opens highlighted answers on mobile and keeps every thread and personal note
   expect(
     screen.getByRole("textbox", { name: "Your note on the selected passage" }),
   ).toHaveValue("Context");
+});
+
+it("keeps note and question editors open when Escape dismisses an IME candidate", () => {
+  render(<ReaderDemo />);
+  fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+  const note = screen.getByRole("textbox", {
+    name: "Your note on the selected passage",
+  });
+  fireEvent.change(note, { target: { value: "생각" } });
+  fireEvent.keyDown(note, { key: "Escape", isComposing: true });
+  expect(note).toHaveFocus();
+  expect(note).toHaveValue("생각");
+  fireEvent.keyDown(note, { key: "Enter", isComposing: true });
+  expect(note).toBeInTheDocument();
+  fireEvent.keyDown(note, { key: "Escape" });
+  expect(note).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
+  const question = screen.getByRole("textbox", {
+    name: "Your question about the selected passage",
+  });
+  fireEvent.change(question, { target: { value: "질문" } });
+  fireEvent.keyDown(question, { key: "Escape", isComposing: true });
+  expect(question).toHaveFocus();
+  expect(question).toHaveValue("질문");
+  fireEvent.keyDown(question, { key: "Escape" });
+  expect(question).not.toBeInTheDocument();
+  const composer = screen.getByRole("textbox", {
+    name: "Ask anything about the whole text",
+  });
+  fireEvent.keyDown(document.body, { key: "/" });
+  fireEvent.change(composer, { target: { value: "Draft question" } });
+  fireEvent.keyDown(composer, { key: "Escape", isComposing: true });
+  expect(composer).toHaveFocus();
+  fireEvent.keyDown(composer, { key: "Escape" });
+  expect(composer).not.toHaveFocus();
+  fireEvent.keyDown(document.body, { key: "/" });
+  expect(composer).toHaveValue("Draft question");
+});
+
+it("anchors whole-text answers to a visible paragraph or the nearest offscreen one", () => {
+  const reading = initialLibrary().readings[0];
+  const save = vi.fn();
+  const view = render(<Reader reading={reading} insights={[]} onSave={save} />);
+  const paragraphs = view.container.querySelectorAll("[data-paragraph]");
+  const rect = (top: number, bottom: number) => ({ top, bottom }) as DOMRect;
+  paragraphs.forEach((paragraph, index) => {
+    vi.spyOn(paragraph, "getBoundingClientRect").mockReturnValue(
+      index === 1
+        ? rect(200, 300)
+        : rect(1200 + index * 100, 1300 + index * 100),
+    );
+  });
+  const composer = screen.getByRole("textbox", {
+    name: "Ask anything about the whole text",
+  });
+  fireEvent.change(composer, { target: { value: "What matters here?" } });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ask about the whole text" }),
+  );
+  expect(save.mock.calls[0][0].ranges[0].paragraph).toBe(1);
+  paragraphs.forEach((paragraph, index) => {
+    vi.mocked(paragraph.getBoundingClientRect).mockReturnValue(
+      rect(-1000 + index * 100, -900 + index * 100),
+    );
+  });
+  fireEvent.change(composer, { target: { value: "And the conclusion?" } });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Ask about the whole text" }),
+  );
+  expect(save.mock.calls[1][0].ranges[0].paragraph).toBe(paragraphs.length - 1);
 });

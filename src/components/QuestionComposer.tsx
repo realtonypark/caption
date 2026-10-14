@@ -52,6 +52,7 @@ export const QuestionComposer = ({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
             if (event.key === "Escape") {
               event.stopPropagation();
               inputRef.current?.blur();
