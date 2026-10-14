@@ -1998,3 +1998,17 @@ ul {
   width: 94px;
   padding-inline: 8px;
 }
+
+.sheet-answer-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #857e72;
+  font-size: 11px;
+}
+.sheet-answer-navigation button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

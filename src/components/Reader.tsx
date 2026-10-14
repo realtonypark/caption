@@ -44,7 +44,9 @@ export const Reader = ({
   const composerRef = useRef<HTMLInputElement>(null);
   const [lens, setLens] = useState<LensSelection | undefined>(
     initialInsight &&
-      (initialInsight.note || initialInsight.highlighted !== false)
+      (initialInsight.note ||
+        (!initialInsight.exchanges.length &&
+          initialInsight.highlighted !== false))
       ? {
           passage: initialInsight.passage,
           mode: initialInsight.note ? "note" : "actions",
@@ -53,7 +55,9 @@ export const Reader = ({
       : undefined,
   );
   const [activeId, setActiveId] = useState<string | undefined>(
-    initialInsight ? answerThreads([initialInsight])[0]?.id : undefined,
+    initialInsight && !initialInsight.note
+      ? answerThreads([initialInsight]).at(-1)?.id
+      : undefined,
   );
   const [hoveredId, setHoveredId] = useState<string>();
   const [marker, setMarker] = useState<Marker>("yellow");
@@ -62,6 +66,9 @@ export const Reader = ({
   const wide = useMedia("(min-width: 1080px)");
   const threads = answerThreads(insights);
   const activeThread = threads.find((thread) => thread.id === activeId);
+  const activeThreadIndex = threads.findIndex(
+    (thread) => thread.id === activeId,
+  );
   const activeInsight = lens ? findInsight(insights, lens.passage) : undefined;
   const initialParagraph = initialInsight?.passage.ranges[0].paragraph;
   const openLens = (passage: Passage, mode: "actions" | "note" = "actions") =>
@@ -72,16 +79,38 @@ export const Reader = ({
   };
   const openSavedInsight = (id: string) => {
     // A drag can end on a mark; its click must not replace the new selection.
-    if (!window.getSelection()?.isCollapsed) return;
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) return;
     const insight = insights.find((entry) => entry.id === id);
     if (!insight) return;
-    if (insight.highlighted !== false) openLens(insight.passage);
-    else {
+    const answers = threads.filter((thread) => thread.insightId === insight.id);
+    if (answers.length) {
+      const current = answers.findIndex((thread) => thread.id === activeId);
       setActiveId(
-        threads.find((thread) => thread.insightId === insight.id)?.id,
+        answers[
+          current < 0 ? answers.length - 1 : (current + 1) % answers.length
+        ].id,
       );
       setLens(undefined);
-    }
+    } else openLens(insight.passage);
+  };
+  const changeAnswer = (index: number) => {
+    const thread = threads[index];
+    if (!thread) return;
+    setActiveId(thread.id);
+    const paragraph = document.getElementById(
+      `paragraph-${thread.passage.ranges[0].paragraph}`,
+    );
+    if (paragraph)
+      window.scrollTo({
+        top: Math.max(
+          0,
+          paragraph.getBoundingClientRect().top +
+            window.scrollY -
+            window.innerHeight * 0.22,
+        ),
+        behavior: "instant",
+      });
   };
   const selectText = () => {
     if (!articleRef.current) return;
@@ -395,18 +424,20 @@ export const Reader = ({
             onWeb={setWeb}
           />
         </article>
-        <Margin
-          insights={insights}
-          articleRef={articleRef}
-          activeId={activeId}
-          onActive={setActiveId}
-          onNote={openNote}
-          onHover={setHoveredId}
-          onAsk={followUp}
-          onDelete={removeThread}
-          onRetry={retry}
-          onParagraph={goToParagraph}
-        />
+        {wide && (
+          <Margin
+            insights={insights}
+            articleRef={articleRef}
+            activeId={activeId}
+            onActive={setActiveId}
+            onNote={openNote}
+            onHover={setHoveredId}
+            onAsk={followUp}
+            onDelete={removeThread}
+            onRetry={retry}
+            onParagraph={goToParagraph}
+          />
+        )}
       </div>
       {lens && (
         <SelectionLens
@@ -440,12 +471,36 @@ export const Reader = ({
           >
             <Icon name="close" />
           </button>
+          {threads.length > 1 && (
+            <nav className="sheet-answer-navigation" aria-label="Saved answers">
+              <button
+                type="button"
+                className="card-icon"
+                aria-label="Previous answer"
+                disabled={activeThreadIndex === 0}
+                onClick={() => changeAnswer(activeThreadIndex - 1)}
+              >
+                <Icon name="back" />
+              </button>
+              <span>
+                Answer {activeThreadIndex + 1} of {threads.length}
+              </span>
+              <button
+                type="button"
+                className="card-icon"
+                aria-label="Next answer"
+                disabled={activeThreadIndex === threads.length - 1}
+                onClick={() => changeAnswer(activeThreadIndex + 1)}
+              >
+                <Icon name="arrow" />
+              </button>
+            </nav>
+          )}
           <AnswerCard
             key={activeThread.id}
             thread={activeThread}
             active
             onActivate={() => {}}
-            onCollapse={() => setActiveId(undefined)}
             onAsk={(question) => followUp(activeThread, question)}
             onDelete={() => removeThread(activeThread)}
             onRetry={() => retry(activeThread)}

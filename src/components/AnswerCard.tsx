@@ -17,7 +17,7 @@ export const AnswerCard = ({
   thread: AnswerThread;
   active: boolean;
   onActivate: () => void;
-  onCollapse: () => void;
+  onCollapse?: () => void;
   onAsk: (question: string) => void;
   onDelete: () => void;
   onRetry: () => void;
@@ -76,15 +76,17 @@ export const AnswerCard = ({
             {follow} follow-up{follow === 1 ? "" : "s"}
           </small>
         )}
-        <button
-          type="button"
-          className="card-icon collapse-answer"
-          aria-label="Collapse note"
-          title="Collapse · Esc"
-          onClick={onCollapse}
-        >
-          <Icon name="collapse" />
-        </button>
+        {onCollapse && (
+          <button
+            type="button"
+            className="card-icon collapse-answer"
+            aria-label="Collapse note"
+            title="Collapse · Esc"
+            onClick={onCollapse}
+          >
+            <Icon name="collapse" />
+          </button>
+        )}
       </header>
       {first.action && first.action !== "ask" && (
         <blockquote>{thread.passage.quote}</blockquote>

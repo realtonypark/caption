@@ -1,11 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { initialLibrary, saveInsight, wholeParagraph } from "../reading";
+import {
+  initialLibrary,
+  saveInsight,
+  wholeParagraph,
+  demoExchange,
+} from "../reading";
 import { Reader } from "./Reader";
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   window.getSelection()?.removeAllRanges();
   delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
 });
@@ -230,4 +237,67 @@ it("keeps a new selection when its drag ends on an existing highlight", () => {
   expect(
     screen.queryByRole("button", { name: "Edit note" }),
   ).not.toBeInTheDocument();
+});
+
+it("opens highlighted answers on mobile and keeps every thread and personal note reachable", () => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  }));
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  const initial = initialLibrary();
+  const reading = initial.readings[0];
+  const passage = wholeParagraph(reading, 0);
+  let state = saveInsight(
+    initial,
+    reading.id,
+    passage,
+    { note: "Context", color: "green" },
+    "saved",
+  );
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        ...demoExchange(reading, passage, "First question?"),
+        threadId: "first",
+      },
+    },
+    "unused",
+  );
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        ...demoExchange(reading, passage, "Second question?"),
+        threadId: "second",
+      },
+    },
+    "unused",
+  );
+  render(
+    <Reader reading={reading} insights={state.insights} onSave={vi.fn()} />,
+  );
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: `Open saved insight: ${passage.quote}`,
+    }),
+  );
+  expect(
+    screen.getByRole("dialog", { name: "Passage answer" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Second question?")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Previous answer" }));
+  expect(screen.getByText("First question?")).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Edit note on paragraph 1" }),
+  );
+  expect(
+    screen.getByRole("textbox", { name: "Your note on the selected passage" }),
+  ).toHaveValue("Context");
 });
