@@ -294,6 +294,21 @@ it("opens highlighted answers on mobile and keeps every thread and personal note
   expect(screen.getByText("Second question?")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Previous answer" }));
   expect(screen.getByText("First question?")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Close answer" }));
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    value: vi.fn(),
+    configurable: true,
+  });
+  fireEvent.keyDown(document.body, { key: "j" });
+  fireEvent.keyDown(
+    screen.getByRole("button", {
+      name: `Open saved insight: ${passage.quote}`,
+    }),
+    { key: "Enter" },
+  );
+  expect(
+    screen.getByRole("dialog", { name: "Passage answer" }),
+  ).toBeInTheDocument();
   fireEvent.click(
     screen.getByRole("button", { name: "Edit note on paragraph 1" }),
   );
