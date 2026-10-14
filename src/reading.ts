@@ -391,6 +391,9 @@ export const passageSegments = (
           highlighted: entry.highlighted !== false,
           color: entry.color ?? "yellow",
           note: !!entry.note,
+          question: entry.exchanges.some(
+            (exchange) => exchange.scope !== "text",
+          ),
         })),
     )
     .sort((a, b) => a.end - a.start - (b.end - b.start));
@@ -404,16 +407,19 @@ export const passageSegments = (
     .filter((position) => position >= 0 && position <= text.length)
     .sort((a, b) => a - b);
   return boundaries.slice(0, -1).map((start, index) => {
-    const range = ranges.find(
+    const covering = ranges.filter(
       (range) => range.start <= start && range.end >= boundaries[index + 1],
     );
     return {
       start,
       text: text.slice(start, boundaries[index + 1]),
-      insightId: range?.id,
-      highlighted: range?.highlighted,
-      color: range?.color,
-      noteEnd: range?.note && range.end === boundaries[index + 1],
+      insightId: covering[0]?.id,
+      highlighted: covering.some((range) => range.highlighted),
+      color: covering.find((range) => range.highlighted)?.color,
+      hasAnswer: covering.some((range) => range.question),
+      noteInsightId: covering.find(
+        (range) => range.note && range.end === boundaries[index + 1],
+      )?.id,
     };
   });
 };

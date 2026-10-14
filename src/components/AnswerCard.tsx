@@ -94,6 +94,7 @@ export const AnswerCard = ({
           <ExchangeView
             key={index}
             exchange={exchange}
+            showQuestion={index > 0 || (first.action ?? "ask") === "ask"}
             onParagraph={onParagraph}
           />
         ))}

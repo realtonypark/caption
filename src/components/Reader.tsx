@@ -55,6 +55,7 @@ export const Reader = ({
   const [activeId, setActiveId] = useState<string | undefined>(
     initialInsight ? answerThreads([initialInsight])[0]?.id : undefined,
   );
+  const [hoveredId, setHoveredId] = useState<string>();
   const [marker, setMarker] = useState<Marker>("yellow");
   const [web, setWeb] = useState(true);
   const [cursor, setCursor] = useState<number>();
@@ -282,6 +283,32 @@ export const Reader = ({
                               className="saved-highlight"
                               data-highlighted={segment.highlighted}
                               data-color={segment.color}
+                              data-has-answer={segment.hasAnswer}
+                              data-active={
+                                activeId === `note-${segment.insightId}` ||
+                                threads.some(
+                                  (thread) =>
+                                    thread.insightId === segment.insightId &&
+                                    thread.id === activeId,
+                                )
+                              }
+                              data-hovered={
+                                hoveredId === `note-${segment.insightId}` ||
+                                threads.some(
+                                  (thread) =>
+                                    thread.insightId === segment.insightId &&
+                                    thread.id === hoveredId,
+                                )
+                              }
+                              onMouseEnter={() =>
+                                setHoveredId(
+                                  threads.find(
+                                    (thread) =>
+                                      thread.insightId === segment.insightId,
+                                  )?.id,
+                                )
+                              }
+                              onMouseLeave={() => setHoveredId(undefined)}
                               type="button"
                               aria-label={`Open saved insight: ${segment.text}`}
                               onClick={() => {
@@ -289,7 +316,7 @@ export const Reader = ({
                                   (entry) => entry.id === segment.insightId,
                                 );
                                 if (!insight) return;
-                                if (segment.highlighted)
+                                if (insight.highlighted !== false)
                                   openLens(insight.passage);
                                 else {
                                   setActiveId(
@@ -304,14 +331,15 @@ export const Reader = ({
                             >
                               {segment.text}
                             </button>
-                            {segment.noteEnd && (
+                            {segment.noteInsightId && (
                               <button
                                 type="button"
                                 className="note-dot"
                                 aria-label={`Edit note on paragraph ${index + 1}`}
                                 onClick={() => {
                                   const insight = insights.find(
-                                    (entry) => entry.id === segment.insightId,
+                                    (entry) =>
+                                      entry.id === segment.noteInsightId,
                                   );
                                   if (insight) openNote(insight);
                                 }}
@@ -364,6 +392,7 @@ export const Reader = ({
           activeId={activeId}
           onActive={setActiveId}
           onNote={openNote}
+          onHover={setHoveredId}
           onAsk={followUp}
           onDelete={removeThread}
           onRetry={retry}

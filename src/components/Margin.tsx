@@ -15,6 +15,7 @@ interface MarginProps {
   activeId?: string;
   onActive: (id?: string) => void;
   onNote: (insight: Insight) => void;
+  onHover: (id?: string) => void;
   onAsk: (thread: AnswerThread, question: string) => void;
   onDelete: (thread: AnswerThread) => void;
   onRetry: (thread: AnswerThread) => void;
@@ -27,6 +28,7 @@ export const Margin = ({
   activeId,
   onActive,
   onNote,
+  onHover,
   onAsk,
   onDelete,
   onRetry,
@@ -164,6 +166,8 @@ export const Margin = ({
           data-margin-card={thread.id}
           data-insight={thread.insightId}
           data-active={thread.id === activeId}
+          onMouseEnter={() => onHover(thread.id)}
+          onMouseLeave={() => onHover()}
         >
           <svg className="margin-leader" aria-hidden="true">
             <path />
@@ -188,6 +192,8 @@ export const Margin = ({
           data-insight={insight.id}
           data-personal-note
           data-active={`note-${insight.id}` === activeId}
+          onMouseEnter={() => onHover(`note-${insight.id}`)}
+          onMouseLeave={() => onHover()}
         >
           <svg className="margin-leader" aria-hidden="true">
             <path />

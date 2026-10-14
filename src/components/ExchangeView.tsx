@@ -4,12 +4,14 @@ import { Icon } from "./Icon";
 export const ExchangeView = ({
   exchange,
   onParagraph,
+  showQuestion = true,
 }: {
   exchange: Exchange;
   onParagraph?: (index: number) => void;
+  showQuestion?: boolean;
 }) => (
   <div className="exchange">
-    <p className="exchange-question">{exchange.question}</p>
+    {showQuestion && <p className="exchange-question">{exchange.question}</p>}
     <div className="exchange-answer">
       <div className="answer-label flex items-center gap-2">
         <Icon name="spark" />

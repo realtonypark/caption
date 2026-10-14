@@ -1972,3 +1972,20 @@ ul {
     transition: none !important;
   }
 }
+
+.saved-highlight[data-has-answer="true"] {
+  text-decoration: underline;
+  text-decoration-color: #c1401b69;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1.5px;
+}
+.saved-highlight[data-active="true"],
+.saved-highlight[data-hovered="true"] {
+  text-decoration-color: #c1401b;
+  box-shadow: 0 2px 0 #c1401b30;
+}
+@media (max-width: 719px) {
+  .paragraph-number {
+    display: none;
+  }
+}
