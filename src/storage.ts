@@ -1,5 +1,7 @@
 import {
   BOOK_DESIGN_COUNT,
+  MARKERS,
+  READING_ACTIONS,
   initialLibrary,
   type LibraryState,
   type Passage,
@@ -81,6 +83,10 @@ export const readLibrary = (): { state: LibraryState; warning?: string } => {
         !reading ||
         typeof entry.id !== "string" ||
         typeof entry.note !== "string" ||
+        (entry.highlighted !== undefined &&
+          typeof entry.highlighted !== "boolean") ||
+        (entry.color !== undefined &&
+          !MARKERS.some((color) => color === entry.color)) ||
         !validPassage(entry.passage, reading) ||
         !Array.isArray(entry.exchanges) ||
         !entry.exchanges.every(
@@ -88,6 +94,14 @@ export const readLibrary = (): { state: LibraryState; warning?: string } => {
             isRecord(exchange) &&
             typeof exchange.question === "string" &&
             typeof exchange.answer === "string" &&
+            (exchange.threadId === undefined ||
+              typeof exchange.threadId === "string") &&
+            (exchange.action === undefined ||
+              (typeof exchange.action === "string" &&
+                Object.hasOwn(READING_ACTIONS, exchange.action))) &&
+            (exchange.scope === undefined ||
+              exchange.scope === "passage" ||
+              exchange.scope === "text") &&
             Array.isArray(exchange.paragraphs) &&
             exchange.paragraphs.every(
               (number) =>

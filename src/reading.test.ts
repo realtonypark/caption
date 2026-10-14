@@ -3,6 +3,8 @@ import {
   demoExchange,
   initialLibrary,
   normalizeLink,
+  answerThreads,
+  wholeParagraph,
   passageSegments,
   saveInsight,
 } from "./reading";
@@ -128,4 +130,72 @@ it("accepts bare hosts with ports while rejecting unsupported schemes", () => {
   );
   expect(() => normalizeLink("mailto:reader@example.com")).toThrow();
   expect(() => normalizeLink("ftp://example.com/essay")).toThrow();
+});
+
+it("keeps independent question threads and retains notes when a thread is removed", () => {
+  const initial = initialLibrary();
+  const reading = initial.readings[0];
+  const passage = wholeParagraph(reading, 0);
+  let state = saveInsight(
+    initial,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        ...demoExchange(reading, passage, "First?"),
+        threadId: "first",
+      },
+    },
+    "insight",
+  );
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        ...demoExchange(reading, passage, "Second?"),
+        threadId: "second",
+      },
+    },
+    "unused",
+  );
+  expect(answerThreads(state.insights).map((thread) => thread.id)).toEqual([
+    "first",
+    "second",
+  ]);
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    { note: "Keep this", highlighted: true, color: "pink" },
+    "unused",
+  );
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    { removeThread: "first" },
+    "unused",
+  );
+  expect(answerThreads(state.insights).map((thread) => thread.id)).toEqual([
+    "second",
+  ]);
+  expect(state.insights[0]).toMatchObject({ note: "Keep this", color: "pink" });
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    { highlighted: false, note: "" },
+    "unused",
+  );
+  expect(state.insights).toHaveLength(1);
+  state = saveInsight(
+    state,
+    reading.id,
+    passage,
+    { removeThread: "second" },
+    "unused",
+  );
+  expect(state.insights).toHaveLength(0);
 });

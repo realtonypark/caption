@@ -35,3 +35,33 @@ export const capturePassage = (article: HTMLElement): Passage | undefined => {
   }
   return ranges.length ? { ranges, quote: quotes.join("\n\n") } : undefined;
 };
+
+// Resolves saved character offsets against the current paragraph markup.
+export const passageRange = (
+  article: HTMLElement,
+  passage: Passage,
+): Range | undefined => {
+  const point = (
+    paragraph: number,
+    offset: number,
+  ): { node: Text; offset: number } | undefined => {
+    const element = article.querySelector(`[data-paragraph="${paragraph}"]`);
+    if (!element) return;
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode() as Text | null;
+    while (node) {
+      if (offset <= node.length) return { node, offset };
+      offset -= node.length;
+      node = walker.nextNode() as Text | null;
+    }
+  };
+  const first = passage.ranges[0];
+  const last = passage.ranges[passage.ranges.length - 1];
+  const start = point(first.paragraph, first.start);
+  const end = point(last.paragraph, last.end);
+  if (!start || !end) return;
+  const range = document.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  return range;
+};
