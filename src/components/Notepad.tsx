@@ -13,8 +13,7 @@ export const Notepad = ({ state }: { state: LibraryState }) => {
         <h1>Your Notepad</h1>
         <p>
           Highlights, questions, and little moments of understanding.
-          <br />
-          Kept together, with the pages they came from.
+          <br /> Kept together, with the pages they came from.
         </p>
       </header>
       {!groups.length ? (
@@ -23,8 +22,7 @@ export const Notepad = ({ state }: { state: LibraryState }) => {
           <h2>Leave yourself a thought.</h2>
           <p>
             Highlight a line, ask AI a question, or write a note while you read.
-            <br />
-            Your insights will find a home here.
+            <br /> Your insights will find a home here.
           </p>
           <Link
             href="/"

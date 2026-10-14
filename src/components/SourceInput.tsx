@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { parseLink } from "../reading";
+import { normalizeLink } from "../reading";
 import { Icon } from "./Icon";
 export const SourceInput = ({
   onAdd,
@@ -11,9 +11,9 @@ export const SourceInput = ({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     try {
-      const url = parseLink(link);
+      const url = normalizeLink(link);
       setError("");
-      onAdd("link", url.href);
+      onAdd("link", url);
     } catch (reason) {
       setError(
         reason instanceof Error ? reason.message : "Enter a valid web link.",
@@ -39,7 +39,7 @@ export const SourceInput = ({
             autoComplete="url"
             value={link}
             onChange={(event) => setLink(event.target.value)}
-            placeholder="Paste a link to something worth reading"
+            placeholder="Paste a link to read"
             aria-invalid={!!error}
             aria-describedby={error ? "source-error" : "source-hint"}
             required

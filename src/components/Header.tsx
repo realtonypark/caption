@@ -9,24 +9,6 @@ export const Header = ({
     <a className="skip-link" href="#main">
       Skip to content
     </a>
-    <nav aria-label="Main navigation" className="flex items-center gap-7">
-      <Link
-        href="/"
-        aria-current={current === "library" ? "page" : undefined}
-        className="nav-link flex items-center gap-2"
-      >
-        <Icon name={current === "reading" ? "back" : "book"} />
-        <span>Library</span>
-      </Link>
-      <Link
-        href="/notepad"
-        aria-current={current === "notepad" ? "page" : undefined}
-        className="nav-link flex items-center gap-2"
-      >
-        <Icon name="notepad" />
-        <span>Notepad</span>
-      </Link>
-    </nav>
     <Link
       href="/"
       className="wordmark flex items-center gap-3"
@@ -54,5 +36,23 @@ export const Header = ({
       </svg>
       <span>Caption</span>
     </Link>
+    <nav aria-label="Main navigation" className="flex items-center gap-7">
+      <Link
+        href="/"
+        aria-current={current === "library" ? "page" : undefined}
+        className="nav-link flex items-center gap-2"
+      >
+        <Icon name={current === "reading" ? "back" : "book"} />
+        <span>Library</span>
+      </Link>
+      <Link
+        href="/notepad"
+        aria-current={current === "notepad" ? "page" : undefined}
+        className="nav-link flex items-center gap-2"
+      >
+        <Icon name="notepad" />
+        <span>Notepad</span>
+      </Link>
+    </nav>
   </header>
 );

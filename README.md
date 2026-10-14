@@ -23,6 +23,6 @@ npm run lint
 npx vitest run
 ```
 
-Caveat is bundled locally under the SIL Open Font License. Titles use Caveat; body text uses system fonts. Book motion respects reduced-motion preferences.
+Caveat is bundled locally under the SIL Open Font License. Book and reading titles use Ivar Headline. The wordmark and section headings use Caveat; body text uses system fonts. Book motion respects reduced-motion preferences.
 
 Domain rules are documented in [src/reading.md](src/reading.md).

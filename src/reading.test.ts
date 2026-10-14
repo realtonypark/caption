@@ -2,17 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   demoExchange,
   initialLibrary,
-  parseLink,
+  normalizeLink,
   passageSegments,
   saveInsight,
-  wholeParagraph,
 } from "./reading";
 
 describe("a saved reading insight", () => {
   it("keeps highlight, note, and AI exchange together without crossing source boundaries", () => {
     const initial = initialLibrary();
     const reading = initial.readings[0];
-    const passage = wholeParagraph(reading, 0);
+    const passage = {
+      quote: reading.paragraphs[0].text.slice(0, 20),
+      ranges: [{ paragraph: 0, start: 0, end: 20 }],
+    };
     const highlighted = saveInsight(initial, reading.id, passage, {}, "first");
     const noted = saveInsight(
       highlighted,
@@ -37,7 +39,10 @@ describe("a saved reading insight", () => {
     const other = saveInsight(
       answered,
       initial.readings[1].id,
-      passage,
+      {
+        ...passage,
+        quote: initial.readings[1].paragraphs[0].text.slice(0, 20),
+      },
       {},
       "second",
     );
@@ -75,7 +80,7 @@ describe("a saved reading insight", () => {
 });
 
 it("accepts a pasted web address but rejects executable schemes and whitespace", () => {
-  expect(parseLink("example.com/essay").href).toBe("https://example.com/essay");
-  expect(() => parseLink("javascript:alert(1)")).toThrow();
-  expect(() => parseLink("not a link")).toThrow();
+  expect(normalizeLink("example.com/essay")).toBe("https://example.com/essay");
+  expect(() => normalizeLink("javascript:alert(1)")).toThrow();
+  expect(() => normalizeLink("not a link")).toThrow();
 });

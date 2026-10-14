@@ -7,8 +7,23 @@
   font-style: normal;
   font-display: swap;
 }
+@font-face {
+  font-family: "Ivar Headline";
+  src: url("/fonts/ivar-headline-medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ivar Headline";
+  src: url("/fonts/ivar-headline-semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 @theme {
   --font-hand: Caveat, cursive;
+  --font-title: "Ivar Headline", Georgia, serif;
   --font-sans: system-ui, -apple-system, "system-ui", "Segoe UI", sans-serif;
 }
 :root {
@@ -53,6 +68,12 @@ h3,
 .wordmark {
   font-family: var(--font-hand);
   font-weight: 400;
+}
+
+h1,
+h2,
+.book-title {
+  overflow-wrap: anywhere;
 }
 h1,
 h2,
@@ -261,8 +282,10 @@ ul {
   transform: rotateX(-15deg) rotateY(-4deg);
 }
 .book-spine {
+  --spine-side: 110px;
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: var(--spine-side) minmax(0, 1fr) var(--spine-side);
   align-items: center;
   gap: 20px;
   height: 100%;
@@ -332,23 +355,26 @@ ul {
   border-block: 5px solid var(--book-bg);
 }
 .book-author {
-  width: 145px;
-  flex-shrink: 0;
+  width: 100%;
   font-size: 11px;
   line-height: 1.5;
   letter-spacing: 0.015em;
   opacity: 0.9;
 }
 .book-title {
-  font-family: var(--font-hand);
-  flex: 1;
-  font-size: 34px;
-  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.2;
   text-align: center;
   text-wrap: balance;
 }
 .book-emblem {
-  margin-left: auto;
+  justify-self: end;
   opacity: 0.8;
 }
 .book-emblem svg {
@@ -421,7 +447,7 @@ ul {
   font-weight: 600;
 }
 .book-button[data-design="2"] .book-title {
-  font-size: 37px;
+  font-size: 25px;
 }
 .empty-library {
   color: #b9aa99;
@@ -467,8 +493,10 @@ ul {
   padding-bottom: 45px;
 }
 .article-header h1 {
-  font-size: 65px;
-  line-height: 1.05;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 52px;
+  line-height: 1.13;
   text-wrap: balance;
   margin: 22px 0 17px;
   color: #39372d;
@@ -862,7 +890,9 @@ ul {
   gap: 20px;
 }
 .notepad-group-heading h2 {
-  font-size: 38px;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 28px;
   line-height: 1.2;
   color: #63664c;
   margin-top: 8px;
@@ -1021,18 +1051,18 @@ ul {
     height: 92px;
   }
   .book-spine {
+    --spine-side: 50px;
     padding: 14px 17px;
     gap: 13px;
   }
   .book-author {
-    width: 63px;
-    font-size: 9px;
+    font-size: 10px;
   }
   .book-title {
-    font-size: 27px;
+    font-size: 18px;
   }
   .book-button[data-design="2"] .book-title {
-    font-size: 29px;
+    font-size: 18px;
   }
   .book-emblem {
     display: none;
@@ -1041,7 +1071,7 @@ ul {
     padding: 26px 34px 50px;
   }
   .article-header h1 {
-    font-size: 50px;
+    font-size: 36px;
   }
   .article-description {
     font-size: 13px;
@@ -1054,9 +1084,11 @@ ul {
     line-height: 1.9;
   }
   .paragraph-number {
-    right: calc(100% + 8px);
+    right: calc(100% + 3px);
+    min-width: 30px;
+    min-height: 44px;
     font-size: 9px;
-    top: 5px;
+    top: -2px;
   }
   .paragraph-section h2 {
     font-size: 32px;
@@ -1098,7 +1130,7 @@ ul {
     gap: 13px;
   }
   .notepad-group-heading h2 {
-    font-size: 32px;
+    font-size: 24px;
   }
   .insight-card {
     padding: 23px 19px;

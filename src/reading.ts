@@ -44,7 +44,7 @@ export const SAMPLE_READINGS: Reading[] = [
   {
     id: "quiet-work",
     title: "The quiet work of remembering",
-    author: "Caption Essays",
+    author: "Essays",
     description:
       "A short paper on attention, memory, and making room for an idea.",
     kind: "sample",
@@ -98,7 +98,7 @@ export const SAMPLE_READINGS: Reading[] = [
   {
     id: "city-map",
     title: "A city is more than its map",
-    author: "Caption Journal",
+    author: "Journal",
     description:
       "A reported-style story about the small systems that hold a city together.",
     kind: "sample",
@@ -147,7 +147,7 @@ export const SAMPLE_READINGS: Reading[] = [
   {
     id: "unfinished-thoughts",
     title: "In praise of unfinished thoughts",
-    author: "Caption Columns",
+    author: "Columns",
     description:
       "A column about curiosity, open questions, and resisting the urge to finish everything.",
     kind: "sample",
@@ -198,7 +198,7 @@ export const initialLibrary = (): LibraryState => ({
   readings: SAMPLE_READINGS,
   insights: [],
 });
-export const parseLink = (input: string): URL => {
+export const normalizeLink = (input: string): string => {
   const value = input.trim();
   if (!value || /\s/.test(value)) throw new Error("Enter a valid web link.");
   const url = new URL(
@@ -206,7 +206,7 @@ export const parseLink = (input: string): URL => {
   );
   if (url.protocol !== "https:" && url.protocol !== "http:")
     throw new Error("Use a link that starts with https:// or http://.");
-  return url;
+  return url.href;
 };
 export const makePreview = (
   id: string,
@@ -302,15 +302,13 @@ export const passageSegments = (
   ]
     .filter((position) => position >= 0 && position <= text.length)
     .sort((a, b) => a - b);
-  return boundaries
-    .slice(0, -1)
-    .map((start, index) => ({
-      start,
-      text: text.slice(start, boundaries[index + 1]),
-      insightId: ranges.find(
-        (range) => range.start <= start && range.end >= boundaries[index + 1],
-      )?.id,
-    }));
+  return boundaries.slice(0, -1).map((start, index) => ({
+    start,
+    text: text.slice(start, boundaries[index + 1]),
+    insightId: ranges.find(
+      (range) => range.start <= start && range.end >= boundaries[index + 1],
+    )?.id,
+  }));
 };
 
 export const passageKey = (passage: Passage) =>

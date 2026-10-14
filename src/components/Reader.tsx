@@ -35,6 +35,7 @@ export const Reader = ({
   );
   const article = useRef<HTMLElement>(null);
   const activeInsight = passage ? findInsight(insights, passage) : undefined;
+  const initialParagraph = initialInsight?.passage.ranges[0].paragraph;
   const selectText = () => {
     if (!article.current) return;
     const captured = capturePassage(article.current);
@@ -45,13 +46,11 @@ export const Reader = ({
       .getElementById(`paragraph-${index}`)
       ?.scrollIntoView({ block: "center", behavior: "instant" });
   useEffect(() => {
-    if (initialInsight)
+    if (initialParagraph !== undefined)
       document
-        .getElementById(
-          `paragraph-${initialInsight.passage.ranges[0].paragraph}`,
-        )
+        .getElementById(`paragraph-${initialParagraph}`)
         ?.scrollIntoView({ block: "center", behavior: "instant" });
-  }, [initialInsight]);
+  }, [initialParagraph]);
   return (
     <main id="main" className="reader-page">
       <div className="reading-layout">

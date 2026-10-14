@@ -52,7 +52,12 @@ const validPassage = (value: unknown, reading: Reading): value is Passage =>
       (range.end as number) > (range.start as number) &&
       (range.end as number) <= paragraph.text.length
     );
-  });
+  }) &&
+  value.ranges
+    .map((range) =>
+      reading.paragraphs[range.paragraph].text.slice(range.start, range.end),
+    )
+    .join("\n\n") === value.quote;
 
 export const readLibrary = (): { state: LibraryState; warning?: string } => {
   try {
