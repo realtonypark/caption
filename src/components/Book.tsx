@@ -5,14 +5,14 @@ export const Book = ({
   onOpen,
 }: {
   reading: Reading;
-  onOpen: () => void;
+  onOpen: (book: HTMLButtonElement) => void;
 }) => (
   <li className="book-row">
     <button
       type="button"
       className="book-button"
       data-design={reading.design}
-      onClick={onOpen}
+      onClick={(event) => onOpen(event.currentTarget)}
       aria-label={`Read ${reading.title}`}
     >
       <span className="book-volume">
