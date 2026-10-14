@@ -12,6 +12,7 @@ export const Book = ({
   return (
     <li className="book-row">
       <button
+        id={`reading-book-${encodeURIComponent(reading.id)}`}
         type="button"
         className="book-button"
         data-design={reading.design}

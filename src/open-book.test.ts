@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 const shelfBook = () => {
-  document.body.innerHTML = `<div class="app"><button class="book-button" data-design="2"><span class="book-volume"><span class="book-top"></span><span class="book-title">A reading</span></span></button></div>`;
+  document.body.innerHTML = `<div class="app"><button id="reading-book-test" class="book-button" data-design="2"><span class="book-volume"><span class="book-top"></span><span class="book-title">A reading</span></span></button></div>`;
   document.querySelector<HTMLElement>(".app")!.inert = false;
   return document.querySelector<HTMLButtonElement>("button")!;
 };
@@ -104,4 +104,52 @@ it("opens the reader when View Transitions are unavailable", async () => {
   expect(reveal).toHaveBeenCalledOnce();
   expect(document.activeElement?.tagName).toBe("H1");
   expect(document.querySelector<HTMLElement>(".app")?.inert).toBe(false);
+});
+
+it("cancels Back during the reader transition and focuses the recreated shelf book", async () => {
+  motionPreference(false);
+  const source = shelfBook();
+  Object.defineProperty(HTMLElement.prototype, "animate", {
+    configurable: true,
+    value: () => ({ finished: Promise.resolve(), cancel: vi.fn() }),
+  });
+  let finish!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  let updated!: () => void;
+  const readerReady = new Promise<void>((resolve) => {
+    updated = resolve;
+  });
+  const skipTransition = vi.fn(finish);
+  Object.defineProperty(document, "startViewTransition", {
+    configurable: true,
+    value: (update: () => void) => ({
+      finished: Promise.resolve().then(() => {
+        update();
+        updated();
+        return pending;
+      }),
+      skipTransition,
+    }),
+  });
+  const complete = openBook(source, () => {
+    showReader();
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await readerReady;
+  expect(skipTransition).not.toHaveBeenCalled();
+  const app = document.querySelector<HTMLElement>(".app")!;
+  app.innerHTML = `<button id="${source.id}">A reading</button>`;
+  const restoredBook = app.querySelector("button")!;
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  finish();
+  await complete;
+  expect(skipTransition).toHaveBeenCalledOnce();
+  expect(document.activeElement).toBe(restoredBook);
+  expect(app.inert).toBe(false);
+  expect(document.documentElement.classList.contains("book-opening")).toBe(
+    false,
+  );
+  expect(document.querySelector(".book-opening-layer")).toBeNull();
 });

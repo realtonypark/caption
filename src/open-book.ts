@@ -31,6 +31,10 @@ export const openBook = async (
   layer.setAttribute("aria-hidden", "true");
   layer.inert = true;
   const book = source.cloneNode(true) as HTMLButtonElement;
+  book.removeAttribute("id");
+  book
+    .querySelectorAll("[id]")
+    .forEach((element) => element.removeAttribute("id"));
   book.classList.add("book-flight");
   const volume = book.querySelector<HTMLElement>(".book-volume")!;
   const cover = book.querySelector<HTMLElement>(".book-top")!;
@@ -65,13 +69,21 @@ export const openBook = async (
   const listeners = new AbortController();
   let cancelled = false;
   let revealed = false;
+  let expectedPopstate = false;
   let transition: ViewTransition | undefined;
   const cancel = () => {
     cancelled = true;
     transition?.skipTransition();
     animations.forEach((animation) => animation.cancel());
   };
-  window.addEventListener("popstate", cancel, { signal: listeners.signal });
+  window.addEventListener(
+    "popstate",
+    () => {
+      if (expectedPopstate) expectedPopstate = false;
+      else cancel();
+    },
+    { signal: listeners.signal },
+  );
   window.addEventListener(
     "keydown",
     (event) => {
@@ -82,9 +94,13 @@ export const openBook = async (
   const showReading = () => {
     if (revealed || cancelled) return;
     revealed = true;
-    // Our own navigation also dispatches popstate; it must not cancel this handoff.
-    listeners.abort();
-    flushSync(reveal);
+    // Consume only the synchronous popstate dispatched by this navigation.
+    expectedPopstate = true;
+    try {
+      flushSync(reveal);
+    } finally {
+      expectedPopstate = false;
+    }
   };
   try {
     const width = Math.min(360, window.innerWidth * 0.66);
@@ -184,7 +200,10 @@ export const openBook = async (
     document.documentElement.classList.remove("book-opening");
     app.inert = wasInert;
     opening = false;
-    if (revealed) focusReading();
-    else if (source.isConnected) source.focus({ preventScroll: true });
+    const shelfBook = source.isConnected
+      ? source
+      : document.getElementById(source.id);
+    if (shelfBook) shelfBook.focus({ preventScroll: true });
+    else if (revealed) focusReading();
   }
 };
