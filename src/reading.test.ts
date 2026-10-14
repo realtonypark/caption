@@ -117,3 +117,15 @@ it("accepts a pasted web address but rejects executable schemes and whitespace",
   expect(() => normalizeLink("javascript:alert(1)")).toThrow();
   expect(() => normalizeLink("not a link")).toThrow();
 });
+
+it("accepts bare hosts with ports while rejecting unsupported schemes", () => {
+  expect(normalizeLink("example.com:8080/essay")).toBe(
+    "https://example.com:8080/essay",
+  );
+  expect(normalizeLink("localhost:5173")).toBe("https://localhost:5173/");
+  expect(normalizeLink("http:example.com:8080/essay")).toBe(
+    "http://example.com:8080/essay",
+  );
+  expect(() => normalizeLink("mailto:reader@example.com")).toThrow();
+  expect(() => normalizeLink("ftp://example.com/essay")).toThrow();
+});

@@ -4,6 +4,7 @@
 
 - The initial library has three original sample readings.
 - A URL or PDF creates a preview using sample text. No source fetching, PDF parsing, or AI request occurs.
+- Web links accept HTTP(S) URLs and bare hosts, including numeric ports. Bare hosts default to HTTPS; other schemes are rejected.
 - A book design is assigned once when a source is added and stored with that source.
 - A passage consists of exact character ranges in one or more paragraphs.
 - Highlighting, asking, and writing a note on the same passage update one insight. Separate readings never share insights.
