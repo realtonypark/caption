@@ -1992,3 +1992,9 @@ ul {
     display: none;
   }
 }
+
+/* Touch selections expose the colors without requiring a hover. */
+.selection-lens[data-docked="true"] .new-highlight-colors {
+  width: 94px;
+  padding-inline: 8px;
+}
