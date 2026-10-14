@@ -36,3 +36,38 @@ it("runs the caller's click handler before navigation and respects its cancellat
   expect(cancel).toHaveBeenCalledOnce();
   expect(window.location.pathname).toBe("/notepad");
 });
+
+it("preserves native navigation for external, new-tab, and download links", () => {
+  const pushState = vi.spyOn(window.history, "pushState");
+  const view = render(<Link href="https://example.com/">Open</Link>);
+  const links = [
+    <Link href="https://example.com/">Open</Link>,
+    <Link href="/notepad" target="_blank">
+      Open
+    </Link>,
+    <Link href="/notepad" target="reading-window">
+      Open
+    </Link>,
+    <Link href="/notepad" download>
+      Open
+    </Link>,
+  ];
+  for (const link of links) {
+    view.rerender(link);
+    const event = new window.MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    // Observe React's handler before suppressing jsdom's unsupported native navigation.
+    let intercepted = false;
+    const anchor = screen.getByRole("link", { name: "Open" });
+    const observe = (nativeEvent: Event) => {
+      intercepted = nativeEvent.defaultPrevented;
+      nativeEvent.preventDefault();
+    };
+    document.addEventListener("click", observe, { once: true });
+    fireEvent(anchor, event);
+    expect(intercepted).toBe(false);
+  }
+  expect(pushState).not.toHaveBeenCalled();
+});
