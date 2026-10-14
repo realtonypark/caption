@@ -7,15 +7,16 @@ export const SourceInput = ({
   onAdd: (kind: "link" | "pdf", label: string) => void;
 }) => {
   const [link, setLink] = useState("");
-  const [error, setError] = useState("");
+  const [linkError, setLinkError] = useState("");
+  const [pdfError, setPdfError] = useState("");
   const submit = (event: FormEvent) => {
     event.preventDefault();
     try {
       const url = normalizeLink(link);
-      setError("");
+      setLinkError("");
       onAdd("link", url);
     } catch (reason) {
-      setError(
+      setLinkError(
         reason instanceof Error ? reason.message : "Enter a valid web link.",
       );
     }
@@ -40,8 +41,10 @@ export const SourceInput = ({
             value={link}
             onChange={(event) => setLink(event.target.value)}
             placeholder="Paste a link to read"
-            aria-invalid={!!error}
-            aria-describedby={error ? "source-error" : "source-hint"}
+            aria-invalid={!!linkError}
+            aria-describedby={
+              linkError ? "source-link-error source-hint" : "source-hint"
+            }
             required
           />
           <button className="open-link" type="submit" aria-label="Open link">
@@ -56,15 +59,19 @@ export const SourceInput = ({
               type="file"
               accept=".pdf,application/pdf"
               aria-label="Choose a PDF"
+              aria-invalid={!!pdfError}
+              aria-describedby={
+                pdfError ? "source-pdf-error source-hint" : "source-hint"
+              }
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
                 if (!/\.pdf$/i.test(file.name)) {
-                  setError("Choose a PDF file.");
+                  setPdfError("Choose a PDF file.");
                   event.target.value = "";
                   return;
                 }
-                setError("");
+                setPdfError("");
                 onAdd("pdf", file.name);
               }}
             />
@@ -72,9 +79,14 @@ export const SourceInput = ({
           <span className="source-whisper">One place for every page.</span>
         </div>
       </form>
-      {error && (
-        <p id="source-error" className="input-error" role="alert">
-          {error}
+      {linkError && (
+        <p id="source-link-error" className="input-error" role="alert">
+          {linkError}
+        </p>
+      )}
+      {pdfError && (
+        <p id="source-pdf-error" className="input-error" role="alert">
+          {pdfError}
         </p>
       )}
       <p id="source-hint" className="demo-hint">
