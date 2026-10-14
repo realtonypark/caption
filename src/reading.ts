@@ -324,12 +324,12 @@ export const passageLabel = (passage: Passage) => {
 };
 export const findInsight = (insights: Insight[], passage: Passage) =>
   insights.find((entry) => samePassage(entry.passage, passage));
+export const readingInsights = (state: LibraryState, readingId: string) =>
+  state.insights.filter((entry) => entry.readingId === readingId);
 export const notepadGroups = (state: LibraryState) =>
   state.readings
     .map((reading) => ({
       reading,
-      insights: state.insights.filter(
-        (entry) => entry.readingId === reading.id,
-      ),
+      insights: readingInsights(state, reading.id),
     }))
     .filter((group) => group.insights.length > 0);

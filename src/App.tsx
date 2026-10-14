@@ -7,6 +7,7 @@ import { Link } from "./components/Link";
 import {
   BOOK_DESIGN_COUNT,
   makePreview,
+  readingInsights,
   saveInsight,
   type LibraryState,
 } from "./reading";
@@ -29,9 +30,7 @@ export const App = () => {
     (item) => readingPath(item.id) === pathname,
   );
   const insightId = new URLSearchParams(route.split("?")[1]).get("insight");
-  const insights = reading
-    ? state.insights.filter((entry) => entry.readingId === reading.id)
-    : [];
+  const insights = reading ? readingInsights(state, reading.id) : [];
   const initialInsight = insights.find((entry) => entry.id === insightId);
   const updateLibrary = (next: LibraryState) => {
     setState(next);
