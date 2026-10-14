@@ -139,6 +139,8 @@ export const SelectionLens = ({
           ?.getBoundingClientRect();
       if (!first) return;
       const last = rects[rects.length - 1] ?? first;
+      const viewportWidth =
+        document.documentElement.clientWidth || window.innerWidth;
       const width = box.offsetWidth;
       const height = box.offsetHeight;
       const viewport = window.visualViewport;
@@ -150,7 +152,7 @@ export const SelectionLens = ({
       let below = coarse || first.top - height - 12 < 64;
       if (below && last.bottom + height + 12 > bottom - 8) below = false;
       idealX ??= (first.left + first.right - width) / 2;
-      const x = Math.max(12, Math.min(window.innerWidth - width - 12, idealX));
+      const x = Math.max(12, Math.min(viewportWidth - width - 12, idealX));
       const y = docked
         ? bottom - height - 16
         : Math.max(
