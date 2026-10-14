@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+body {
+  margin: 8px;
+  color: #000;
+  font-family: serif;
+}
+
+h1 {
+  margin-block: 0.67em;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
