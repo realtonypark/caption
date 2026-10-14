@@ -6,6 +6,7 @@ import { Reader } from "./Reader";
 
 afterEach(() => {
   cleanup();
+  window.getSelection()?.removeAllRanges();
   delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
 });
 
@@ -197,4 +198,36 @@ it("saves notes on Enter and outside click, cancels Escape edits, and recolors h
       name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
     }),
   ).toHaveAttribute("data-color", "blue");
+});
+
+it("keeps a new selection when its drag ends on an existing highlight", () => {
+  const initial = initialLibrary();
+  const reading = initial.readings[0];
+  const passage = wholeParagraph(reading, 0);
+  const state = saveInsight(
+    initial,
+    reading.id,
+    passage,
+    { note: "Context", color: "blue" },
+    "saved",
+  );
+  render(
+    <Reader reading={reading} insights={state.insights} onSave={vi.fn()} />,
+  );
+  const mark = screen.getByRole("button", {
+    name: `Open saved insight: ${passage.quote}`,
+  });
+  const range = document.createRange();
+  range.setStart(mark.firstChild!, 0);
+  range.setEnd(mark.firstChild!, 6);
+  window.getSelection()!.addRange(range);
+  fireEvent.mouseUp(mark);
+  fireEvent.click(mark);
+  expect(screen.getByRole("button", { name: "Define" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Add a note" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Edit note" }),
+  ).not.toBeInTheDocument();
 });

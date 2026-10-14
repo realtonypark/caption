@@ -70,6 +70,19 @@ export const Reader = ({
     openLens(insight.passage, "note");
     setActiveId(`note-${insight.id}`);
   };
+  const openSavedInsight = (id: string) => {
+    // A drag can end on a mark; its click must not replace the new selection.
+    if (!window.getSelection()?.isCollapsed) return;
+    const insight = insights.find((entry) => entry.id === id);
+    if (!insight) return;
+    if (insight.highlighted !== false) openLens(insight.passage);
+    else {
+      setActiveId(
+        threads.find((thread) => thread.insightId === insight.id)?.id,
+      );
+      setLens(undefined);
+    }
+  };
   const selectText = () => {
     if (!articleRef.current) return;
     const passage = capturePassage(articleRef.current);
@@ -279,7 +292,7 @@ export const Reader = ({
                       (segment) =>
                         segment.insightId ? (
                           <Fragment key={segment.start}>
-                            <button
+                            <span
                               className="saved-highlight"
                               data-highlighted={segment.highlighted}
                               data-color={segment.color}
@@ -309,28 +322,24 @@ export const Reader = ({
                                 )
                               }
                               onMouseLeave={() => setHoveredId(undefined)}
-                              type="button"
+                              role="button"
+                              tabIndex={0}
                               aria-label={`Open saved insight: ${segment.text}`}
-                              onClick={() => {
-                                const insight = insights.find(
-                                  (entry) => entry.id === segment.insightId,
-                                );
-                                if (!insight) return;
-                                if (insight.highlighted !== false)
-                                  openLens(insight.passage);
-                                else {
-                                  setActiveId(
-                                    threads.find(
-                                      (thread) =>
-                                        thread.insightId === insight.id,
-                                    )?.id,
-                                  );
-                                  setLens(undefined);
+                              onClick={() =>
+                                openSavedInsight(segment.insightId!)
+                              }
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  openSavedInsight(segment.insightId!);
                                 }
                               }}
                             >
                               {segment.text}
-                            </button>
+                            </span>
                             {segment.noteInsightId && (
                               <button
                                 type="button"
