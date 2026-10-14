@@ -202,7 +202,7 @@ export const normalizeLink = (input: string): string => {
   const value = input.trim();
   if (!value || /\s/.test(value)) throw new Error("Enter a valid web link.");
   const url = new URL(
-    /^[a-z][a-z\d+.-]*:/i.test(value) ? value : `https://${value}`,
+    /^(?:[a-z][a-z\d+.-]*:\/\/|https?:)/i.test(value) ? value : `https://${value}`,
   );
   if (url.protocol !== "https:" && url.protocol !== "http:")
     throw new Error("Use a link that starts with https:// or http://.");
