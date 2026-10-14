@@ -77,6 +77,39 @@ describe("a saved reading insight", () => {
         .join(""),
     ).toBe(text.slice(2, 40));
   });
+
+  it("opens nested highlights through their own text regardless of save order", () => {
+    const initial = initialLibrary();
+    const text = initial.readings[0].paragraphs[0].text;
+    const outer = {
+      quote: text.slice(0, 40),
+      ranges: [{ paragraph: 0, start: 0, end: 40 }],
+    };
+    const inner = {
+      quote: text.slice(10, 20),
+      ranges: [{ paragraph: 0, start: 10, end: 20 }],
+    };
+    const saved = saveInsight(
+      saveInsight(initial, "quiet-work", outer, {}, "outer"),
+      "quiet-work",
+      inner,
+      {},
+      "inner",
+    );
+    for (const insights of [saved.insights, saved.insights.toReversed()]) {
+      const segments = passageSegments(text, 0, insights);
+      expect(segments.map((segment) => segment.text).join("")).toBe(text);
+      expect(segments.find((segment) => segment.start === 10)?.insightId).toBe(
+        "inner",
+      );
+      expect(segments.find((segment) => segment.start === 0)?.insightId).toBe(
+        "outer",
+      );
+      expect(segments.find((segment) => segment.start === 20)?.insightId).toBe(
+        "outer",
+      );
+    }
+  });
 });
 
 it("accepts a pasted web address but rejects executable schemes and whitespace", () => {

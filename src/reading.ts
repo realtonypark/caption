@@ -288,11 +288,13 @@ export const passageSegments = (
   paragraph: number,
   insights: Insight[],
 ) => {
-  const ranges = insights.flatMap((entry) =>
-    entry.passage.ranges
-      .filter((range) => range.paragraph === paragraph)
-      .map((range) => ({ ...range, id: entry.id })),
-  );
+  const ranges = insights
+    .flatMap((entry) =>
+      entry.passage.ranges
+        .filter((range) => range.paragraph === paragraph)
+        .map((range) => ({ ...range, id: entry.id })),
+    )
+    .sort((a, b) => a.end - a.start - (b.end - b.start));
   const boundaries = [
     ...new Set([
       0,
