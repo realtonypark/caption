@@ -1,11 +1,10 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   answerThreads,
-  demoExchange,
+  saveInsight,
   findInsight,
   passageKey,
   passageSegments,
-  READING_ACTIONS,
   wholeParagraph,
   type AnswerThread,
   type Insight,
@@ -14,6 +13,7 @@ import {
   type Passage,
   type Reading,
   type ReadingAction,
+  type Exchange,
 } from "../reading";
 import { capturePassage } from "../selection";
 import { useMedia } from "../use-media";
@@ -22,6 +22,8 @@ import { Margin } from "./Margin";
 import { SelectionLens } from "./SelectionLens";
 import { AnswerCard } from "./AnswerCard";
 import { QuestionComposer } from "./QuestionComposer";
+import { FREE_MODELS, requestAnswer, questionFor } from "../services/ai";
+import { preferredModel, keepModel } from "../services/model-preference";
 
 interface ReaderProps {
   reading: Reading;
@@ -36,10 +38,30 @@ interface LensSelection {
 }
 export const Reader = ({
   reading,
-  insights,
+  insights: savedInsights,
   initialInsight,
   onSave,
 }: ReaderProps) => {
+  const [pending, setPending] = useState<
+    { id: string; passage: Passage; exchanges: Exchange[] } | undefined
+  >();
+  const requestRef = useRef<AbortController | null>(null);
+  const [model, setModel] = useState(preferredModel);
+  const [requestError, setRequestError] = useState("");
+  const insights = pending
+    ? saveInsight(
+        { readings: [reading], insights: savedInsights },
+        reading.id,
+        pending.passage,
+        {
+          exchanges: pending.exchanges,
+          highlighted: findInsight(savedInsights, pending.passage)
+            ? (findInsight(savedInsights, pending.passage)!.highlighted ?? true)
+            : false,
+        },
+        pending.id,
+      ).insights
+    : savedInsights;
   const articleRef = useRef<HTMLElement>(null);
   const composerRef = useRef<HTMLInputElement>(null);
   const [lens, setLens] = useState<LensSelection | undefined>(
@@ -61,7 +83,6 @@ export const Reader = ({
   );
   const [hoveredId, setHoveredId] = useState<string>();
   const [marker, setMarker] = useState<Marker>("yellow");
-  const [web, setWeb] = useState(true);
   const [cursor, setCursor] = useState<number>();
   const wide = useMedia("(min-width: 1080px)");
   const threads = answerThreads(insights);
@@ -130,48 +151,119 @@ export const Reader = ({
     question?: string,
     threadId: string = crypto.randomUUID(),
     scope: "passage" | "text" = "passage",
-  ) => {
-    onSave(passage, {
-      exchange: {
-        ...demoExchange(
-          reading,
-          passage,
-          question ?? READING_ACTIONS[action].question,
-          action,
-          scope,
-        ),
-        threadId,
-      },
-    });
+    replace = false,
+  ): Promise<boolean> => {
+    if (requestRef.current) {
+      setRequestError(
+        "Finish or stop the current answer before asking another question.",
+      );
+      return Promise.resolve(false);
+    }
+    const thread = threads.find((item) => item.id === threadId);
+    const history =
+      (replace ? thread?.exchanges.slice(0, -1) : thread?.exchanges)?.filter(
+        (exchange) => exchange.status === undefined,
+      ) ?? [];
+    const previous = findInsight(savedInsights, passage);
+    const old = previous?.exchanges ?? [];
+    const removed = replace ? thread?.exchanges.at(-1) : undefined;
+    const kept = old.filter((exchange) => exchange !== removed);
+    const text = questionFor(action, question);
+    const exchange: Exchange = {
+      question: text,
+      answer: "",
+      paragraphs: [],
+      action,
+      scope,
+      threadId,
+      status: "pending",
+    };
+    let partial = "";
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setRequestError("");
+    setPending({ id: threadId, passage, exchanges: [...kept, exchange] });
     setActiveId(threadId);
     setLens(undefined);
+    const run = async () => {
+      try {
+        const answer = await requestAnswer({
+          reading,
+          passage,
+          action,
+          question: text,
+          scope,
+          history,
+          model,
+          signal: controller.signal,
+          onText: (answer) => {
+            partial = answer;
+            setPending((value) =>
+              value
+                ? { ...value, exchanges: [...kept, { ...exchange, answer }] }
+                : value,
+            );
+          },
+        });
+        if (controller.signal.aborted) return;
+        if (replace)
+          onSave(passage, {
+            replaceAnswer: { threadId, exchange: { ...answer, threadId } },
+          });
+        else onSave(passage, { exchange: { ...answer, threadId } });
+        setPending(undefined);
+      } catch (error) {
+        if (controller.signal.reason === "discard") return;
+        const message = controller.signal.aborted
+          ? "Answer stopped. You can try again."
+          : error instanceof Error
+            ? error.message
+            : "Could not get an answer.";
+        // A failed retry keeps the saved exchange; the banner shows the error.
+        if (!replace)
+          onSave(passage, {
+            exchange: {
+              ...exchange,
+              answer: partial,
+              status: "error",
+              error: message,
+            },
+          });
+        setPending(undefined);
+        setRequestError(message);
+      } finally {
+        if (requestRef.current === controller) requestRef.current = null;
+      }
+    };
+    run().catch(() => {
+      setPending(undefined);
+      setRequestError("Could not get an answer.");
+    });
+    return Promise.resolve(true);
   };
   const followUp = (thread: AnswerThread, question: string) =>
     ask(thread.passage, "ask", question, thread.id, thread.exchanges[0].scope);
   const removeThread = (thread: AnswerThread) => {
-    onSave(thread.passage, { removeThread: thread.id });
+    if (answerThreads(savedInsights).some((item) => item.id === thread.id))
+      onSave(thread.passage, { removeThread: thread.id });
+    if (pending?.id === thread.id) {
+      requestRef.current?.abort("discard");
+      setPending(undefined);
+    }
     setActiveId(undefined);
   };
   const retry = (thread: AnswerThread) => {
-    const insight = insights.find((entry) => entry.id === thread.insightId)!;
-    const last = thread.exchanges[thread.exchanges.length - 1];
-    onSave(thread.passage, {
-      exchanges: insight.exchanges.map((exchange) =>
-        exchange === last
-          ? {
-              ...demoExchange(
-                reading,
-                thread.passage,
-                last.question,
-                last.action,
-                last.scope,
-              ),
-              threadId: thread.id,
-            }
-          : exchange,
-      ),
-    });
+    const last = thread.exchanges.at(-1)!;
+    void ask(
+      thread.passage,
+      last.action ?? "ask",
+      last.question,
+      thread.id,
+      last.scope ?? "passage",
+      true,
+    );
   };
+  useEffect(() => () => requestRef.current?.abort("discard"), []);
   useEffect(() => {
     if (initialParagraph !== undefined)
       document
@@ -268,6 +360,20 @@ export const Reader = ({
   });
   return (
     <main id="main" className="reader-page">
+      {requestError && (
+        <p className="reader-error" role="alert">
+          {requestError}
+        </p>
+      )}
+      {pending?.exchanges.at(-1)?.status === "pending" && (
+        <button
+          type="button"
+          className="stop-answer"
+          onClick={() => requestRef.current?.abort()}
+        >
+          Stop answer
+        </button>
+      )}
       <div className="reading-layout">
         <article
           ref={articleRef}
@@ -281,16 +387,24 @@ export const Reader = ({
               <span>
                 {reading.kind === "sample"
                   ? "Sample reading"
-                  : "Sample text preview"}
+                  : reading.kind === "pdf"
+                    ? "PDF reading"
+                    : "Web reading"}
               </span>
-              <span aria-hidden="true">·</span>
-              <span>Take your time</span>
             </div>
             <h1 tabIndex={-1}>{reading.title}</h1>
             <p className="article-description">{reading.description}</p>
             <p className="article-byline">{reading.author}</p>
             {reading.location && (
-              <p className="source-location">{reading.location}</p>
+              <p className="source-location">
+                {reading.location.startsWith("http") ? (
+                  <a href={reading.location} target="_blank" rel="noreferrer">
+                    Open original source ↗
+                  </a>
+                ) : (
+                  reading.location
+                )}
+              </p>
             )}
             <div className="reading-instruction flex items-center gap-2">
               <Icon name="pen" />
@@ -396,11 +510,6 @@ export const Reader = ({
               </section>
             ))}
           </div>
-          <footer className="article-end">
-            <span aria-hidden="true">✳</span>
-            <p>A good place to pause.</p>
-            <span>Keep one thought. Come back for another.</span>
-          </footer>
           <QuestionComposer
             inputRef={composerRef}
             onAsk={(question) => {
@@ -427,7 +536,7 @@ export const Reader = ({
                       : nearest,
                   undefined,
                 );
-              ask(
+              return ask(
                 wholeParagraph(
                   reading,
                   Number(visible?.paragraph.dataset.paragraph ?? 0),
@@ -438,9 +547,24 @@ export const Reader = ({
                 "text",
               );
             }}
-            web={web}
-            onWeb={setWeb}
-          />
+          >
+            <label className="reader-model">
+              <span className="sr-only">Reading model</span>
+              <select
+                value={model}
+                onChange={(event) => {
+                  setModel(event.target.value);
+                  keepModel(event.target.value);
+                }}
+              >
+                {FREE_MODELS.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </QuestionComposer>
         </article>
         {wide && (
           <Margin
@@ -468,10 +592,10 @@ export const Reader = ({
           marker={marker}
           onMarker={setMarker}
           onSave={(patch) => onSave(lens.passage, patch)}
-          onAsk={(action, question) => ask(lens.passage, action, question)}
+          onAsk={(action, question) =>
+            ask(lens.passage, action, question)
+          }
           onClose={() => setLens(undefined)}
-          web={web}
-          onWeb={setWeb}
         />
       )}
       {!wide && activeThread && (

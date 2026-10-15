@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Browser library persistence check</title>
+<h1>Browser library persistence check</h1>
+<p>Run with the Vite development server. Uses a separate test owner.</p>
+<button id="run">Check concurrent saves and stale deletion</button>
+<p id="result" role="status">Ready</p>
+<script type="module">
+  import { localLibrary } from "/src/services/local-library.ts";
+  import { initialLibrary } from "/src/reading.ts";
+  document.querySelector("#run").onclick = async () => {
+    const result = document.querySelector("#result");
+    result.textContent = "Checking…";
+    try {
+      const owner = "test:concurrent-device-libraries";
+      const now = Date.now();
+      const [a, b] = initialLibrary()
+        .readings.slice(0, 2)
+        .map((r, i) => ({ ...r, id: `test-${i}`, updatedAt: now }));
+      const first = { readings: [a], insights: [] };
+      const second = { readings: [b], insights: [] };
+      await Promise.all([
+        localLibrary(owner, first),
+        localLibrary(owner, second),
+      ]);
+      const together = await localLibrary(owner);
+      if (
+        !together.readings.some((r) => r.id === a.id) ||
+        !together.readings.some((r) => r.id === b.id)
+      )
+        throw Error("A concurrent save lost another connection's reading.");
+      await localLibrary(owner, {
+        ...second,
+        deletedReadings: { [a.id]: now + 1 },
+      });
+      await localLibrary(owner, first);
+      const deleted = await localLibrary(owner);
+      if (
+        deleted.readings.some((r) => r.id === a.id) ||
+        !deleted.readings.some((r) => r.id === b.id)
+      )
+        throw Error("A stale save undid a deletion or lost unrelated work.");
+      result.textContent =
+        "Passed: concurrent saves preserve both readings; a stale save cannot undo a deletion.";
+    } catch (error) {
+      result.textContent = `Failed: ${error.message}`;
+    }
+  };
+</script>

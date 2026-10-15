@@ -1,9 +1,12 @@
 import { Icon } from "./Icon";
 import { Link } from "./Link";
+import type { ReactNode } from "react";
 export const Header = ({
   current,
+  account,
 }: {
   current: "library" | "reading" | "notepad";
+  account?: ReactNode;
 }) => (
   <header className="site-header flex items-center justify-between">
     <a className="skip-link" href="#main">
@@ -53,6 +56,7 @@ export const Header = ({
         <Icon name="notepad" />
         <span>Notepad</span>
       </Link>
+      {account}
     </nav>
   </header>
 );

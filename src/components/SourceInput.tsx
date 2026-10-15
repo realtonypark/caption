@@ -4,21 +4,29 @@ import { Icon } from "./Icon";
 export const SourceInput = ({
   onAdd,
 }: {
-  onAdd: (kind: "link" | "pdf", label: string) => void;
+  onAdd: (
+    kind: "link" | "pdf",
+    label: string,
+    file?: File,
+  ) => void | Promise<void>;
 }) => {
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
   const [pdfError, setPdfError] = useState("");
-  const submit = (event: FormEvent) => {
+  const [busy, setBusy] = useState(false);
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     try {
       const url = normalizeLink(link);
       setLinkError("");
-      onAdd("link", url);
+      setBusy(true);
+      await onAdd("link", url);
     } catch (reason) {
       setLinkError(
         reason instanceof Error ? reason.message : "Enter a valid web link.",
       );
+    } finally {
+      setBusy(false);
     }
   };
   return (
@@ -46,8 +54,14 @@ export const SourceInput = ({
               linkError ? "source-link-error source-hint" : "source-hint"
             }
             required
+            disabled={busy}
           />
-          <button className="open-link" type="submit" aria-label="Open link">
+          <button
+            className="open-link"
+            type="submit"
+            aria-label="Open link"
+            disabled={busy}
+          >
             <Icon name="arrow" />
           </button>
         </div>
@@ -58,12 +72,13 @@ export const SourceInput = ({
             <input
               type="file"
               accept=".pdf,application/pdf"
+              disabled={busy}
               aria-label="Choose a PDF"
               aria-invalid={!!pdfError}
               aria-describedby={
                 pdfError ? "source-pdf-error source-hint" : "source-hint"
               }
-              onChange={(event) => {
+              onChange={async (event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
                 if (!/\.pdf$/i.test(file.name)) {
@@ -72,7 +87,20 @@ export const SourceInput = ({
                   return;
                 }
                 setPdfError("");
-                onAdd("pdf", file.name);
+                const input = event.currentTarget;
+                setBusy(true);
+                try {
+                  await onAdd("pdf", file.name, file);
+                } catch (error) {
+                  setPdfError(
+                    error instanceof Error
+                      ? error.message
+                      : "Could not read this PDF.",
+                  );
+                } finally {
+                  setBusy(false);
+                  input.value = "";
+                }
               }}
             />
           </label>
@@ -90,7 +118,9 @@ export const SourceInput = ({
         </p>
       )}
       <p id="source-hint" className="demo-hint">
-        Links and PDFs open sample text in this demo.
+        {busy
+          ? "Opening your reading…"
+          : "Read a web article or PDF. Your notes stay with its source."}
       </p>
     </section>
   );

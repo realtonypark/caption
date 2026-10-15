@@ -1,0 +1,10 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "quotas",
+      "fieldPath": "expiresAt",
+      "ttl": true
+    }
+  ]
+}

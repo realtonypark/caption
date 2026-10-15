@@ -1,0 +1,11 @@
+# Working reading app
+
+The first PR replaces simulated imports and answers with real web/PDF extraction and streamed, passage-grounded AI. It keeps the existing Library, reader, Notepad, typography, and book transition. Imports show progress and failures. Answers retain paragraph citations, follow-ups, retries, cancellation, and model attribution. The default models are Inkling, Nemotron Ultra, and the Free Model Router; Inkling is initially selected. Named free models fall back to the router. Supported reasoning uses maximum effort. Web search is disabled.
+
+Firebase Hosting serves the app; Cloud Functions holds the owner key in Secret Manager and handles external requests. Requests require an anonymous or Google Firebase identity and use server-side quotas. Web importing checks public network destinations at every redirect, pins DNS resolution, caps downloads, and renders extracted text without executing source HTML. PDF text extraction runs in the browser, preserving page and paragraph context; scanned pages require OCR. No keys enter the frontend bundle or repository.
+
+Guests can begin without a sign-in screen. Google sign-in adds private cloud persistence for readings and insights and migrates existing browser work without replacing account data. Signed-out work stays local. Cloud security rules isolate accounts. Offline and failed saves are visible. Reading removal, source links, and Notepad export complete the existing workflows.
+
+A separate stacked PR adds a Models page with connected-provider rows, provider search, model selection, key editing, disconnection, and ChatGPT subscription authorization. API providers are OpenRouter, OpenAI, Anthropic, and Meta. Secrets stay encrypted on the server and never appear in settings responses. Subscription authorization follows the supported OAuth contract. Provider failure does not silently send a user's private request to another provider.
+
+Validation includes domain and interface regressions, source-import edge cases, AI stream failures and fallback, persistence and account isolation with Firebase emulators, secret/bundle checks, and actual desktop/mobile flows with Aside. Deploy and verify the Firebase-hosted app. Deliver both PRs without merging them.

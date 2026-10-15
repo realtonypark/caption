@@ -236,3 +236,4 @@ it("composes a containing highlight with a nested answer without losing either a
   expect(segments.at(-1)?.noteInsightId).toBe("outer");
   expect(segments.map((segment) => segment.text).join("")).toBe(outer.quote);
 });
+

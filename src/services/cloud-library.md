@@ -1,0 +1,5 @@
+# Library persistence
+
+The browser keeps one IndexedDB library per guest or Google account. Each write merges entries and tombstones in one IndexedDB transaction, so a stale tab cannot replace another tab's unrelated work. Account switches stop the previous subscription and queued writes. Guest work merges into the first signed-in account; signed-out views never display the previous account library. Browser storage failures preserve the in-memory copy and show a warning.
+
+Each reading and insight has an update timestamp. Deletion tombstones prevent older devices from restoring removed entries. The newest version wins per entry. Edits to the same entry on two devices use last-write-wins; unrelated entries merge. Each changed entry is written in a transaction that compares its timestamp against the stored document and keeps the newer copy; tombstoning a reading also deletes its paragraph chunks. Large readings are kept in paragraph chunks when they exceed Firestore document size. Subscriptions wait for server snapshots before merging. Google identities can access only their own documents; anonymous identities cannot access cloud libraries.

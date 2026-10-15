@@ -1,0 +1,167 @@
+import { useEffect, useRef, useState } from "react";
+import { onIdTokenChanged, type User } from "firebase/auth";
+import { auth } from "./services/firebase";
+import { localLibrary } from "./services/local-library";
+import { watchLibrary, saveCloudLibrary } from "./services/cloud-library";
+import {
+  initialLibrary,
+  mergeLibraries,
+  stampLibrary,
+  type LibraryState,
+} from "./reading";
+import { readLibrary } from "./storage";
+
+export const useLibrary = () => {
+  const [restored] = useState(readLibrary);
+  const [state, setState] = useState(restored.state);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [warning, setWarning] = useState(restored.warning);
+  const [status, setStatus] = useState("Saved on this device");
+  const current = useRef(state);
+  const owner = useRef("guest");
+  const ready = useRef(false);
+  const confirmed = useRef<LibraryState>({ readings: [], insights: [] });
+  const queue = useRef(Promise.resolve());
+  const persist = (next: LibraryState) => {
+    const id = owner.current;
+    const account = auth.currentUser;
+    void localLibrary(id, next).catch(() =>
+      setWarning(
+        "Device storage is unavailable. Keep this page open until your work is synced.",
+      ),
+    );
+    if (account && !account.isAnonymous && ready.current) {
+      setStatus("Saving…");
+      queue.current = queue.current
+        .catch(() => {})
+        .then(() =>
+          owner.current === id
+            ? saveCloudLibrary(account.uid, confirmed.current, next)
+            : undefined,
+        )
+        .then(() => {
+          if (owner.current === id) {
+            confirmed.current = mergeLibraries(confirmed.current, next);
+            setStatus("Saved to your account");
+            setWarning(undefined);
+          }
+        })
+        .catch((error) => {
+          if (owner.current === id) {
+            setStatus("Saved on this device");
+            setWarning(
+              `Cloud save failed: ${error.message}. Your work remains on this device.`,
+            );
+          }
+        });
+    }
+  };
+  const update = (
+    next: LibraryState | ((state: LibraryState) => LibraryState),
+  ) => {
+    const stamped = stampLibrary(
+      current.current,
+      typeof next === "function" ? next(current.current) : next,
+      Date.now(),
+    );
+    current.current = stamped;
+    setState(stamped);
+    persist(stamped);
+  };
+  useEffect(() => {
+    let stopCloud: (() => void) | undefined;
+    let generation = 0;
+    let identity: string | undefined;
+    const stopAuth = onIdTokenChanged(auth, async (account) => {
+      const id = account && !account.isAnonymous ? account.uid : "guest";
+      // Token refreshes must not cancel a guest migration already in progress.
+      if (identity === id) return;
+      identity = id;
+      const run = ++generation;
+      stopCloud?.();
+      setLoading(true);
+      ready.current = false;
+      setUser(account?.isAnonymous ? null : account);
+      const wasGuest = owner.current === "guest";
+      const guestState = wasGuest ? current.current : undefined;
+      owner.current = id;
+      if (!wasGuest) {
+        current.current = initialLibrary();
+        setState(current.current);
+      }
+      try {
+        const [saved, savedGuest] = await Promise.all([
+          localLibrary(id),
+          guestState && id !== "guest"
+            ? localLibrary("guest")
+            : Promise.resolve(undefined),
+        ]);
+        if (run !== generation) return;
+        const local =
+          saved ?? (id === "guest" ? restored.state : initialLibrary());
+        const loaded =
+          id !== "guest" && guestState
+            ? mergeLibraries(
+                mergeLibraries(
+                  guestState,
+                  savedGuest ?? { readings: [], insights: [] },
+                ),
+                local,
+              )
+            : local;
+        // Edits made while storage was loading stay in the in-flight state.
+        current.current = mergeLibraries(loaded, current.current);
+        setState(current.current);
+        void localLibrary(id, current.current).catch(() =>
+          setWarning(
+            "Device storage is unavailable. Your work remains in this page.",
+          ),
+        );
+        if (id === "guest") {
+          setStatus("Saved on this device");
+          setLoading(false);
+          return;
+        }
+        setStatus("Connecting…");
+        stopCloud = watchLibrary(
+          id,
+          (remote) => {
+            if (run !== generation) return;
+            confirmed.current = remote;
+            const merged = mergeLibraries(current.current, remote);
+            current.current = merged;
+            setState(merged);
+            ready.current = true;
+            setLoading(false);
+            persist(merged);
+          },
+          (error) => {
+            if (run === generation) {
+              setLoading(false);
+              setWarning(
+                `Cloud library unavailable: ${error.message}. Your device copy is kept.`,
+              );
+              setStatus("Saved on this device");
+            }
+          },
+        );
+      } catch (error) {
+        if (run === generation) {
+          setLoading(false);
+          setWarning(
+            error instanceof Error
+              ? error.message
+              : "Could not open device storage.",
+          );
+        }
+      }
+    });
+    return () => {
+      generation++;
+      stopAuth();
+      stopCloud?.();
+    };
+  }, [restored.state]);
+  return { state, update, user, warning, status, loading };
+};

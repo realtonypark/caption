@@ -19,7 +19,6 @@ import {
 import { passageRange } from "../selection";
 import { copyText } from "../clipboard";
 import { Icon } from "./Icon";
-import { WebSwitch } from "./WebSwitch";
 
 type Mode = "actions" | "ask" | "note";
 const ACTION_ICONS = {
@@ -54,8 +53,6 @@ export const SelectionLens = ({
   onSave,
   onAsk,
   onClose,
-  web,
-  onWeb,
 }: {
   articleRef: RefObject<HTMLElement | null>;
   passage: Passage;
@@ -65,10 +62,8 @@ export const SelectionLens = ({
   marker: Marker;
   onMarker: (color: Marker) => void;
   onSave: (patch: InsightPatch) => void;
-  onAsk: (action: ReadingAction, question?: string) => void;
+  onAsk: (action: ReadingAction, question?: string) => Promise<boolean>;
   onClose: () => void;
-  web: boolean;
-  onWeb: (on: boolean) => void;
 }) => {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [draft, setDraft] = useState(
@@ -118,8 +113,9 @@ export const SelectionLens = ({
     close();
   };
   const run = (action: ReadingAction, question?: string) => {
-    onAsk(action, question);
-    close();
+    void onAsk(action, question).then((accepted) => {
+      if (accepted) close();
+    });
   };
 
   useLayoutEffect(() => {
@@ -464,7 +460,6 @@ export const SelectionLens = ({
                   }
                 }}
               />
-              <WebSwitch on={web} onChange={onWeb} />
               <button
                 className="lens-send"
                 type="submit"
@@ -487,7 +482,9 @@ export const SelectionLens = ({
                 ))}
               </div>
             )}
-            <span className="lens-demo">Demo · sample answers</span>
+            <span className="lens-demo">
+              AI can make mistakes. Check the source.
+            </span>
           </form>
         )}
         <span className="lens-pointer" aria-hidden="true" />
