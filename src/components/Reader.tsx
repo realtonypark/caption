@@ -227,18 +227,16 @@ export const Reader = ({
           : error instanceof Error
             ? error.message
             : "Could not get an answer.";
-        const failed: Exchange = {
-          ...exchange,
-          answer: partial,
-          status: "error",
-          error: message,
-        };
-        // A failed retry keeps the saved answer; the banner shows the error.
-        if (!replace || removed?.status === "error") {
-          if (replace)
-            onSave(passage, { replaceAnswer: { threadId, exchange: failed } });
-          else onSave(passage, { exchange: failed });
-        }
+        // A failed retry keeps the saved exchange; the banner shows the error.
+        if (!replace)
+          onSave(passage, {
+            exchange: {
+              ...exchange,
+              answer: partial,
+              status: "error",
+              error: message,
+            },
+          });
         setPending(undefined);
         setRequestError(message);
       } finally {
