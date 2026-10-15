@@ -87,13 +87,24 @@ export const useLibrary = () => {
         setState(current.current);
       }
       try {
-        const saved = await localLibrary(id);
+        const [saved, savedGuest] = await Promise.all([
+          localLibrary(id),
+          guestState && id !== "guest"
+            ? localLibrary("guest")
+            : Promise.resolve(undefined),
+        ]);
         if (run !== generation) return;
         const local =
           saved ?? (id === "guest" ? restored.state : initialLibrary());
         current.current =
           id !== "guest" && guestState
-            ? mergeLibraries(guestState, local)
+            ? mergeLibraries(
+                mergeLibraries(
+                  guestState,
+                  savedGuest ?? { readings: [], insights: [] },
+                ),
+                local,
+              )
             : local;
         setState(current.current);
         void localLibrary(id, current.current).catch(() =>
