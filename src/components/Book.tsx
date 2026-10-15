@@ -26,6 +26,7 @@ export const Book = ({
           <span className="book-top" aria-hidden="true">
             <span className="cover-lines" />
           </span>
+          <span className="book-bottom" aria-hidden="true" />
           <span className="book-pages" aria-hidden="true" />
           <span className="book-spine">
             <span className="book-author">{reading.author}</span>
