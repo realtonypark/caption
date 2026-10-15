@@ -2046,12 +2046,26 @@ ul {
   margin-top: 8px;
 }
 @media (max-width: 719px) {
+  .site-header {
+    padding-inline: 18px;
+  }
+  .wordmark {
+    font-size: 28px;
+  }
   .site-header nav {
-    gap: 14px;
+    gap: 10px;
+  }
+  .site-header nav > .nav-link {
+    flex-direction: column;
+    gap: 3px;
+    font-size: 10px;
+    line-height: 1.3;
   }
   .account-menu > button {
-    max-width: 95px;
-    font-size: 11px;
+    max-width: 68px;
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
   }
   .account-popover {
     width: 250px;
