@@ -593,15 +593,6 @@ export const answerThreads = (insights: Insight[]): AnswerThread[] => {
   );
 };
 
-export const stripInvalidMarkers = (
-  answer: string,
-  valid: readonly number[],
-): string => {
-  const keep = new Set(valid);
-  return answer.replace(/\[¶(\d+)\]/g, (marker, digits: string) =>
-    keep.has(Number(digits)) ? marker : "",
-  );
-};
 
 export const notepadMarkdown = (state: LibraryState): string =>
   [

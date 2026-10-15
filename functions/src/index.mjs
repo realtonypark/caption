@@ -188,6 +188,38 @@ export const api = onRequest(
       let text = "";
       let actualModel = body.model || FREE_MODELS[0].id;
       let sources = [];
+      const paragraphCount = body.paragraphs.length;
+      const cleanMarkers = (value) =>
+        value.replace(/\[¶(\d+)\]/g, (marker, digits) =>
+          Number(digits) >= 1 && Number(digits) <= paragraphCount ? marker : "",
+        );
+      let held = "";
+      const sendText = (content) => {
+        const combined = held + content;
+        held = "";
+        const open = combined.lastIndexOf("[");
+        if (open >= 0) {
+          const tail = combined.slice(open);
+          if (
+            !tail.includes("]") &&
+            tail.length <= 16 &&
+            /\[¶?\d*$/.test(tail)
+          ) {
+            held = tail;
+            const flush = cleanMarkers(combined.slice(0, open));
+            if (flush) {
+              text += flush;
+              send({ type: "text", text: flush });
+            }
+            return;
+          }
+        }
+        const cleaned = cleanMarkers(combined);
+        if (cleaned) {
+          text += cleaned;
+          send({ type: "text", text: cleaned });
+        }
+      };
       const heartbeat = setInterval(() => res.write(": keepalive\n\n"), 15000);
       try {
         for await (const event of providerEvents(response.body, format)) {
@@ -202,14 +234,19 @@ export const api = onRequest(
                 .map((a) => a.url_citation),
             );
           const content = message?.content;
-          if (typeof content === "string") {
-            text += content;
-            send({ type: "text", text: content });
-          }
+          if (typeof content === "string") sendText(content);
           if (event.choices?.[0]?.finish_reason === "length")
             throw new Error(
               "The model ran out of space. Try a shorter question.",
             );
+        }
+        if (held) {
+          const cleaned = cleanMarkers(held);
+          held = "";
+          if (cleaned) {
+            text += cleaned;
+            send({ type: "text", text: cleaned });
+          }
         }
         if (!text.trim())
           throw new Error("The model returned no answer. Try another model.");
