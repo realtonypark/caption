@@ -83,7 +83,6 @@ export const Reader = ({
   );
   const [hoveredId, setHoveredId] = useState<string>();
   const [marker, setMarker] = useState<Marker>("yellow");
-  const [web, setWeb] = useState(false);
   const [cursor, setCursor] = useState<number>();
   const wide = useMedia("(min-width: 1080px)");
   const threads = answerThreads(insights);
@@ -195,7 +194,6 @@ export const Reader = ({
         scope,
         history,
         model,
-        web,
         signal: controller.signal,
         onText: (answer) => {
           partial = answer;
@@ -569,8 +567,6 @@ export const Reader = ({
                 "text",
               );
             }}
-            web={web}
-            onWeb={setWeb}
           />
         </article>
         {wide && (
@@ -603,8 +599,6 @@ export const Reader = ({
             void ask(lens.passage, action, question);
           }}
           onClose={() => setLens(undefined)}
-          web={web}
-          onWeb={setWeb}
         />
       )}
       {!wide && activeThread && (

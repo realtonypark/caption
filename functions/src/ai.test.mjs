@@ -54,6 +54,16 @@ test("routes a named model to the free fallback with maximum reasoning", async (
   ]);
   assert.equal(sent.reasoning.effort, "max");
   assert.equal(sent.stream, true);
+  assert.equal(sent.plugins, undefined);
+  await answerRequest(
+    { ...body, web: true },
+    "test-key",
+    undefined,
+    async (_url, options) => {
+      assert.equal(JSON.parse(options.body).plugins, undefined);
+      return new Response("");
+    },
+  );
   await assert.rejects(
     answerRequest(
       body,

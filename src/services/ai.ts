@@ -11,7 +11,6 @@ export interface AnswerRequest {
   scope: "passage" | "text";
   history: Exchange[];
   model: string;
-  web: boolean;
   signal: AbortSignal;
   onText: (text: string) => void;
 }
@@ -26,7 +25,6 @@ export const requestAnswer = async (
     scope,
     history,
     model,
-    web,
     signal,
     onText,
   } = options;
@@ -40,7 +38,6 @@ export const requestAnswer = async (
       action,
       scope,
       model,
-      web,
       history: history.flatMap((e) => [
         { role: "user", content: e.question },
         { role: "assistant", content: e.answer },

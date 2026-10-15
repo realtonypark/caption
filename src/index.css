@@ -1491,36 +1491,7 @@ ul {
   color: #857e72;
   padding-top: 7px;
 }
-.web-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  height: 28px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: #857e72;
-  font-size: 11.5px;
-  font-weight: 500;
-}
-.web-switch[aria-pressed="true"] {
-  background: #fffdf9;
-  color: #302d28;
-  box-shadow: 0 1px 2px #0000001a;
-}
-.web-switch svg {
-  width: 13px;
-  height: 13px;
-}
-.selection-lens .web-switch {
-  color: #b7ad9a;
-}
-.selection-lens .web-switch[aria-pressed="true"] {
-  background: #f3efe6;
-  color: #1d1b18;
-}
+
 .mobile-answer-sheet {
   position: fixed;
   inset: auto 0 0;

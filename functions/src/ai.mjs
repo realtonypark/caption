@@ -103,9 +103,6 @@ export const answerRequest = async (body, key, signal, request = fetch) => {
         stream: true,
         max_tokens: 32768,
         reasoning: { effort: "max", exclude: true },
-        ...(body.web
-          ? { plugins: [{ id: "web", engine: "native", max_results: 3 }] }
-          : {}),
       }),
     },
   );

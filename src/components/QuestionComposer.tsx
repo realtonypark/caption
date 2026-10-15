@@ -1,18 +1,13 @@
 import { useState, type RefObject } from "react";
 import { ARTICLE_QUESTIONS } from "../reading";
 import { Icon } from "./Icon";
-import { WebSwitch } from "./WebSwitch";
 
 export const QuestionComposer = ({
   inputRef,
   onAsk,
-  web,
-  onWeb,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
   onAsk: (question: string) => void;
-  web: boolean;
-  onWeb: (on: boolean) => void;
 }) => {
   const [question, setQuestion] = useState("");
   const [focused, setFocused] = useState(false);
@@ -62,7 +57,6 @@ export const QuestionComposer = ({
           aria-label="Ask anything about the whole text"
         />
         {!focused && !question && <kbd>/</kbd>}
-        <WebSwitch on={web} onChange={onWeb} />
         <button
           type="submit"
           className="composer-send"

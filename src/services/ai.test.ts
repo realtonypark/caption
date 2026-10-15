@@ -13,7 +13,6 @@ it("streams an answer, preserves thread history, and reports an incomplete strea
     scope: "passage" as const,
     question: "An example?",
     model: "openrouter/free",
-    web: false,
     history: [
       { question: "Why?", answer: "Because context matters.", paragraphs: [1] },
     ],
