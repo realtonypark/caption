@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from "vitest";
-import { capturePassage } from "./selection";
+import { capturePassage, passageRange } from "./selection";
 
 afterEach(() => {
   window.getSelection()?.removeAllRanges();
@@ -15,7 +15,11 @@ it("anchors a selection across rendered highlights and paragraphs without includ
   range.setStart(article.querySelector("button")!.firstChild!, 1);
   range.setEnd(article.querySelector('[data-paragraph="1"]')!.firstChild!, 8);
   window.getSelection()!.addRange(range);
-  expect(capturePassage(article)).toEqual({
+  const passage = capturePassage(article)!;
+  expect(passageRange(article, passage)?.toString()).toBe(
+    "aved line.Another thoughtA second",
+  );
+  expect(passage).toEqual({
     quote: "aved line.\n\nA second",
     ranges: [
       { paragraph: 0, start: 3, end: 13 },

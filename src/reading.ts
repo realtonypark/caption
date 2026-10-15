@@ -22,10 +22,64 @@ export interface Passage {
   quote: string;
   ranges: TextRange[];
 }
+export const MARKERS = ["yellow", "green", "blue", "pink"] as const;
+export type Marker = (typeof MARKERS)[number];
+export type ReadingAction =
+  "ask" | "explain" | "define" | "simplify" | "check" | "connect" | "counter";
+export const READING_ACTIONS: Record<
+  ReadingAction,
+  { label: string; hint: string; question: string }
+> = {
+  ask: {
+    label: "Ask",
+    hint: "Type any question about it",
+    question: "Your question",
+  },
+  explain: {
+    label: "Explain",
+    hint: "What it means here, and why it is here",
+    question: "What does this mean here?",
+  },
+  define: {
+    label: "Define",
+    hint: "The word, as this author uses it",
+    question: "What does this word mean here?",
+  },
+  simplify: {
+    label: "Simplify",
+    hint: "The same idea in plain words",
+    question: "Can you say it more simply?",
+  },
+  check: {
+    label: "Fact-check",
+    hint: "Examine the claim with a sample response",
+    question: "Does this still hold up?",
+  },
+  connect: {
+    label: "Related",
+    hint: "Where else the text takes this up",
+    question: "Where else does the text take this up?",
+  },
+  counter: {
+    label: "Counterpoint",
+    hint: "The strongest objection to it",
+    question: "What is the strongest objection?",
+  },
+};
+export const ARTICLE_QUESTIONS = [
+  "What is the core argument, in three sentences?",
+  "What evidence does the author lean on most?",
+  "What would a sharp skeptic say?",
+];
+export const isShortSelection = (quote: string) =>
+  quote.trim().split(/\s+/).length <= 4;
 export interface Exchange {
   question: string;
   answer: string;
   paragraphs: number[];
+  threadId?: string;
+  action?: ReadingAction;
+  scope?: "passage" | "text";
 }
 export interface Insight {
   id: string;
@@ -33,6 +87,16 @@ export interface Insight {
   passage: Passage;
   note: string;
   exchanges: Exchange[];
+  highlighted?: boolean;
+  color?: Marker;
+}
+export interface InsightPatch {
+  note?: string;
+  exchange?: Exchange;
+  exchanges?: Exchange[];
+  highlighted?: boolean;
+  color?: Marker;
+  removeThread?: string;
 }
 export interface LibraryState {
   readings: Reading[];
@@ -243,12 +307,17 @@ export const saveInsight = (
   state: LibraryState,
   readingId: string,
   passage: Passage,
-  patch: { note?: string; exchange?: Exchange },
+  patch: InsightPatch,
   id: string,
 ): LibraryState => {
   const previous = state.insights.find(
     (entry) =>
       entry.readingId === readingId && samePassage(entry.passage, passage),
+  );
+  const keptExchanges = (patch.exchanges ?? previous?.exchanges ?? []).filter(
+    (exchange) =>
+      !patch.removeThread ||
+      (exchange.threadId ?? previous?.id) !== patch.removeThread,
   );
   const entry: Insight = {
     id: previous?.id ?? id,
@@ -256,14 +325,22 @@ export const saveInsight = (
     passage,
     note: patch.note ?? previous?.note ?? "",
     exchanges: patch.exchange
-      ? [...(previous?.exchanges ?? []), patch.exchange]
-      : (previous?.exchanges ?? []),
+      ? [...keptExchanges, patch.exchange]
+      : keptExchanges,
+    highlighted:
+      patch.highlighted ??
+      (previous ? (previous.highlighted ?? true) : !patch.exchange),
+    color: patch.color ?? previous?.color ?? "yellow",
   };
   return {
     ...state,
-    insights: previous
+    insights: (previous
       ? state.insights.map((item) => (item.id === previous.id ? entry : item))
-      : [...state.insights, entry],
+      : [...state.insights, entry]
+    ).filter(
+      (item) =>
+        item.highlighted !== false || item.note.trim() || item.exchanges.length,
+    ),
   };
 };
 export const wholeParagraph = (reading: Reading, index: number): Passage => ({
@@ -276,14 +353,21 @@ export const demoExchange = (
   reading: Reading,
   passage: Passage,
   question: string,
+  action: ReadingAction = "ask",
+  scope: "passage" | "text" = "passage",
 ): Exchange => {
-  const indexes = [...new Set(passage.ranges.map((range) => range.paragraph))];
+  const indexes =
+    scope === "text"
+      ? reading.paragraphs.map((_, index) => index)
+      : [...new Set(passage.ranges.map((range) => range.paragraph))];
   return {
     question,
     answer: indexes
       .map((index) => reading.paragraphs[index].explanation)
       .join(" "),
     paragraphs: indexes.map((index) => index + 1),
+    action,
+    scope,
   };
 };
 export const passageSegments = (
@@ -292,10 +376,25 @@ export const passageSegments = (
   insights: Insight[],
 ) => {
   const ranges = insights
+    .filter(
+      (entry) =>
+        entry.highlighted !== false ||
+        entry.note ||
+        entry.exchanges.some((exchange) => exchange.scope !== "text"),
+    )
     .flatMap((entry) =>
       entry.passage.ranges
         .filter((range) => range.paragraph === paragraph)
-        .map((range) => ({ ...range, id: entry.id })),
+        .map((range) => ({
+          ...range,
+          id: entry.id,
+          highlighted: entry.highlighted !== false,
+          color: entry.color ?? "yellow",
+          note: !!entry.note,
+          question: entry.exchanges.some(
+            (exchange) => exchange.scope !== "text",
+          ),
+        })),
     )
     .sort((a, b) => a.end - a.start - (b.end - b.start));
   const boundaries = [
@@ -307,13 +406,22 @@ export const passageSegments = (
   ]
     .filter((position) => position >= 0 && position <= text.length)
     .sort((a, b) => a - b);
-  return boundaries.slice(0, -1).map((start, index) => ({
-    start,
-    text: text.slice(start, boundaries[index + 1]),
-    insightId: ranges.find(
+  return boundaries.slice(0, -1).map((start, index) => {
+    const covering = ranges.filter(
       (range) => range.start <= start && range.end >= boundaries[index + 1],
-    )?.id,
-  }));
+    );
+    return {
+      start,
+      text: text.slice(start, boundaries[index + 1]),
+      insightId: covering[0]?.id,
+      highlighted: covering.some((range) => range.highlighted),
+      color: covering.find((range) => range.highlighted)?.color,
+      hasAnswer: covering.some((range) => range.question),
+      noteInsightId: covering.find(
+        (range) => range.note && range.end === boundaries[index + 1],
+      )?.id,
+    };
+  });
 };
 
 export const passageKey = (passage: Passage) =>
@@ -336,3 +444,34 @@ export const notepadGroups = (state: LibraryState) =>
       insights: readingInsights(state, reading.id),
     }))
     .filter((group) => group.insights.length > 0);
+
+export interface AnswerThread {
+  id: string;
+  insightId: string;
+  passage: Passage;
+  exchanges: Exchange[];
+}
+export const answerThreads = (insights: Insight[]): AnswerThread[] => {
+  const threads: AnswerThread[] = [];
+  for (const insight of insights) {
+    for (const exchange of insight.exchanges) {
+      const id = exchange.threadId ?? insight.id;
+      let thread = threads.find((item) => item.id === id);
+      if (!thread) {
+        thread = {
+          id,
+          insightId: insight.id,
+          passage: insight.passage,
+          exchanges: [],
+        };
+        threads.push(thread);
+      }
+      thread.exchanges.push(exchange);
+    }
+  }
+  return threads.sort(
+    (a, b) =>
+      a.passage.ranges[0].paragraph - b.passage.ranges[0].paragraph ||
+      a.passage.ranges[0].start - b.passage.ranges[0].start,
+  );
+};
