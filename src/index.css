@@ -580,7 +580,7 @@ ul {
   max-width: 1190px;
   margin: auto;
   display: grid;
-  grid-template-columns: minmax(0, 650px) minmax(0, 360px);
+  grid-template-columns: minmax(0, 650px) minmax(0, 420px);
   gap: 80px;
 }
 .reading-article {
@@ -681,25 +681,6 @@ ul {
 }
 .saved-highlight:hover {
   background: #edce7a;
-}
-.article-end {
-  text-align: center;
-  margin: 55px 0 10px;
-  padding-top: 25px;
-  border-top: 1px solid #dedace;
-  color: #9d947d;
-}
-.article-end > span:first-child {
-  font-size: 28px;
-}
-.article-end p {
-  font-family: var(--font-hand);
-  font-size: 30px;
-  margin: 12px 0 9px;
-  color: #6c7156;
-}
-.article-end > span:last-of-type {
-  font-size: 11px;
 }
 .reading-margin {
   position: relative;
@@ -1414,20 +1395,29 @@ ul {
   visibility: hidden;
   opacity: 0;
 }
-.composer-form {
+.composer-panel {
   pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 6px 6px 16px;
   border: 1px solid #e5dfd2;
   background: #fcfaf6eb;
   border-radius: 16px;
   box-shadow: 0 14px 36px -14px #281e1433;
   backdrop-filter: blur(12px);
 }
-.composer-form:focus-within {
+.composer-panel:focus-within {
   border-color: #bba98b;
+}
+.composer-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+}
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px 7px;
 }
 .composer-form input {
   width: 100%;
@@ -1485,11 +1475,10 @@ ul {
   border-color: #bba98b;
 }
 .composer-demo {
-  display: block;
-  text-align: center;
+  text-align: right;
   font-size: 10px;
+  line-height: 1.4;
   color: #857e72;
-  padding-top: 7px;
 }
 
 .mobile-answer-sheet {
@@ -2017,14 +2006,15 @@ ul {
 .reader-model {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 20px 0;
-  font-size: 13px;
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
   color: #777367;
 }
 .reader-model select {
-  padding: 7px 10px;
-  border: 1px solid #d8d4c7;
+  width: min(190px, 40vw);
+  padding: 4px 6px;
+  border: 0;
   border-radius: 6px;
   font: inherit;
   background: #faf8f2;
