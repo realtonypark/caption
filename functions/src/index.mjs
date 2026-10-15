@@ -14,16 +14,8 @@ const key = defineSecret("OPENROUTER_KEY");
 const encryptionKey = defineSecret("PROVIDER_ENCRYPTION_KEY");
 const db = getFirestore();
 const hash = (text) => createHash("sha256").update(text).digest("hex");
-const limit = async (uid, ip, kind) => {
+const quota = async (ids, caps) => {
   const now = Date.now();
-  const minute = Math.floor(now / 60000);
-  const day = Math.floor(now / 86400000);
-  const caps = kind === "ask" ? [6, 30, 1000] : [10, 100, 5000];
-  const ids = [
-    `${kind}-user-${hash(uid)}-${minute}`,
-    `${kind}-ip-${hash(ip)}-${day}`,
-    `${kind}-all-${day}`,
-  ];
   await db.runTransaction(async (transaction) => {
     const refs = ids.map((id) => db.collection("quotas").doc(id));
     const snapshots = await transaction.getAll(...refs);
@@ -47,6 +39,24 @@ const limit = async (uid, ip, kind) => {
       ),
     );
   });
+};
+const limit = async (uid, ip, kind) => {
+  const now = Date.now();
+  const minute = Math.floor(now / 60000);
+  const day = Math.floor(now / 86400000);
+  const caps = kind === "ask" ? [6, 30, 1000] : [10, 100, 5000];
+  await quota(
+    [
+      `${kind}-user-${hash(uid)}-${minute}`,
+      `${kind}-ip-${hash(ip)}-${day}`,
+      `${kind}-all-${day}`,
+    ],
+    caps,
+  );
+};
+const limitPersonal = async (uid) => {
+  const minute = Math.floor(Date.now() / 60000);
+  await quota([`personal-ask-user-${hash(uid)}-${minute}`], [6]);
 };
 export const api = onRequest(
   {
@@ -104,7 +114,7 @@ export const api = onRequest(
           });
           return;
         }
-        if (req.body?.command !== "list")
+        if (["list", "connect"].includes(req.body?.command))
           await limit(identity.uid, ip, "import");
         res.json(
           await providerCommand(
@@ -146,16 +156,16 @@ export const api = onRequest(
         res.status(400).json({ error: error.message });
         return;
       }
-      await limit(identity.uid, ip, "ask");
       let response;
       let format = "chat";
-      if (body.connectionId) {
+      if (body.connectionId !== undefined) {
         if (identity.firebase?.sign_in_provider !== "google.com") {
           res
             .status(403)
             .json({ error: "Sign in to use this provider connection." });
           return;
         }
+        await limitPersonal(identity.uid);
         const provider = await connectedProvider(
           identity.uid,
           body.connectionId,
@@ -167,7 +177,10 @@ export const api = onRequest(
           provider.key,
           signal,
         ));
-      } else response = await answerRequest(body, key.value(), signal);
+      } else {
+        await limit(identity.uid, ip, "ask");
+        response = await answerRequest(body, key.value(), signal);
+      }
       res.set("Content-Type", "text/event-stream; charset=utf-8");
       res.set("X-Accel-Buffering", "no");
       res.flushHeaders();

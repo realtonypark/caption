@@ -85,6 +85,9 @@ export const discoverModels = async (id, key, signal, request = fetch) => {
     .map((m) => ({
       id: m.id,
       name: m.name || m.display_name || m.id,
+      ...(id === "openrouter" && m.top_provider?.max_completion_tokens
+        ? { maxCompletionTokens: m.top_provider.max_completion_tokens }
+        : {}),
       reasoning:
         id === "anthropic"
           ? !!m.capabilities?.thinking?.supported
@@ -132,7 +135,7 @@ export const providerRequest = async (
       model: model.id,
       messages,
       stream: true,
-      max_tokens: 32768,
+      max_tokens: Math.min(32768, model.maxCompletionTokens ?? 32768),
       ...(model.reasoning
         ? { reasoning: { effort: "max", exclude: true } }
         : {}),

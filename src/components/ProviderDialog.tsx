@@ -9,6 +9,7 @@ export const ProviderDialog = ({
   onClose: () => void;
 }) => {
   const ref = useRef<HTMLDialogElement>(null);
+  const pressedBackdrop = useRef(false);
   useEffect(() => {
     const dialog = ref.current;
     dialog?.showModal();
@@ -23,8 +24,13 @@ export const ProviderDialog = ({
         event.preventDefault();
         if (!busy) onClose();
       }}
+      onPointerDown={(event) => {
+        pressedBackdrop.current = event.target === event.currentTarget;
+      }}
       onClick={(event) => {
-        if (event.target === event.currentTarget && !busy) {
+        const startedOutside = pressedBackdrop.current;
+        pressedBackdrop.current = false;
+        if (event.target === event.currentTarget && startedOutside && !busy) {
           const rect = event.currentTarget.getBoundingClientRect();
           if (
             event.clientX < rect.left ||

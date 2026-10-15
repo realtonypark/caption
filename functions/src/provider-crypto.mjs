@@ -26,7 +26,9 @@ export const openCredential = (value, key, owner) => {
     Buffer.from(value.iv, "base64"),
   );
   decipher.setAAD(Buffer.from(owner));
-  decipher.setAuthTag(Buffer.from(value.tag, "base64"));
+  const tag = Buffer.from(value.tag, "base64");
+  if (tag.length !== 16) throw new Error("Invalid provider credential.");
+  decipher.setAuthTag(tag);
   return JSON.parse(
     Buffer.concat([
       decipher.update(Buffer.from(value.ciphertext, "base64")),

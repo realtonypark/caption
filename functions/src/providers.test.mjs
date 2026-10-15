@@ -31,6 +31,15 @@ test("encrypts credentials with account and connection binding", () => {
       "account:connection",
     ),
   );
+  assert.throws(
+    () =>
+      openCredential(
+        { ...sealed, tag: randomBytes(4).toString("base64") },
+        key,
+        "account:connection",
+      ),
+    /Invalid provider credential/,
+  );
 });
 test("validates keys through provider model discovery and never forwards arbitrary endpoints", async () => {
   const models = await discoverModels(
@@ -48,6 +57,7 @@ test("validates keys through provider model discovery and never forwards arbitra
             name: "Readable",
             architecture: { output_modalities: ["text"] },
             supported_parameters: ["reasoning"],
+            top_provider: { max_completion_tokens: 8192 },
           },
           { id: "image", architecture: { output_modalities: ["image"] } },
         ],
@@ -55,7 +65,12 @@ test("validates keys through provider model discovery and never forwards arbitra
     },
   );
   assert.deepEqual(models, [
-    { id: "model", name: "Readable", reasoning: true },
+    {
+      id: "model",
+      name: "Readable",
+      maxCompletionTokens: 8192,
+      reasoning: true,
+    },
   ]);
   await assert.rejects(
     discoverModels("openrouter", "bad-key", undefined, async (url) => {
@@ -189,6 +204,33 @@ test("uses each provider protocol without search or cross-provider fallback", as
       /not sent to another/,
     );
   }
+});
+test("caps OpenRouter requests at the catalog completion limit", async () => {
+  const openrouter = (models) => ({
+    provider: "openrouter",
+    models,
+    enabled: models.map((m) => m.id),
+  });
+  await providerRequest(
+    { ...body, model: "model" },
+    openrouter([{ id: "model", reasoning: false, maxCompletionTokens: 4096 }]),
+    "key",
+    undefined,
+    async (_url, options) => {
+      assert.equal(JSON.parse(options.body).max_tokens, 4096);
+      return new Response("");
+    },
+  );
+  await providerRequest(
+    { ...body, model: "model" },
+    openrouter([{ id: "model", reasoning: false }]),
+    "key",
+    undefined,
+    async (_url, options) => {
+      assert.equal(JSON.parse(options.body).max_tokens, 32768);
+      return new Response("");
+    },
+  );
 });
 test("normalizes Responses and Anthropic streaming and rejects incomplete answers", async () => {
   for (const [format, events] of [

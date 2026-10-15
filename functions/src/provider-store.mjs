@@ -33,11 +33,12 @@ export const providerCommand = async (uid, body, encryptionKey, signal) => {
     const existing = await connections.doc(id).get();
     if (existing.exists && existing.data().provider !== body.provider)
       throw new Error("Cannot change a connection provider.");
-    const enabled =
-      existing
-        .data()
-        ?.enabled?.filter((id) => models.some((model) => model.id === id)) ??
-      models.slice(0, 3).map((m) => m.id);
+    const previousEnabled = existing
+      .data()
+      ?.enabled?.filter((id) => models.some((model) => model.id === id));
+    const enabled = previousEnabled?.length
+      ? previousEnabled
+      : models.slice(0, 3).map((m) => m.id);
     await connections.doc(id).set({
       provider: body.provider,
       name: providerInfo(body.provider).name,

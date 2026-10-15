@@ -10,6 +10,7 @@ import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 import { FREE_MODELS } from "./services/ai";
 import { listConnections } from "./services/providers";
+import type { ProviderEditing } from "./components/Models";
 
 const Reader = lazy(() =>
   import("./components/Reader").then((module) => ({ default: module.Reader })),
@@ -42,6 +43,7 @@ export const App = () => {
     useState<readonly { id: string; name: string }[]>(FREE_MODELS);
   const [modelOwner, setModelOwner] = useState<string>();
   const [modelError, setModelError] = useState("");
+  const [editingProvider, setEditingProvider] = useState<ProviderEditing>();
   const route = useRoute();
   const pathname = route.split("?")[0];
   const current =
@@ -60,7 +62,7 @@ export const App = () => {
   const initialInsight = insights.find((entry) => entry.id === insightId);
   useEffect(() => {
     let alive = true;
-    if (user && current !== "models")
+    if (user && current === "reading")
       void listConnections()
         .then((connections) => {
           if (alive) {
@@ -80,8 +82,11 @@ export const App = () => {
           }
         })
         .catch((error) => {
-          if (alive)
+          if (alive) {
+            setModelOwner(undefined);
+            setModels(FREE_MODELS);
             setModelError(`Provider settings unavailable: ${error.message}`);
+          }
         });
     return () => {
       alive = false;
@@ -101,7 +106,7 @@ export const App = () => {
           {warning}
         </p>
       )}
-      {modelError && current !== "models" && user && (
+      {modelError && current === "reading" && user && (
         <p className="storage-warning" role="alert">
           {modelError}
         </p>
@@ -150,7 +155,12 @@ export const App = () => {
         />
       ) : current === "models" ? (
         <Suspense fallback={<PageLoading />}>
-          <Models key={user?.uid ?? "guest"} user={user} />
+          <Models
+            key={user?.uid ?? "guest"}
+            user={user}
+            editing={editingProvider}
+            onEditing={setEditingProvider}
+          />
         </Suspense>
       ) : current === "notepad" ? (
         <Suspense fallback={<PageLoading />}>
