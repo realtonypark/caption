@@ -73,12 +73,16 @@ export const useLibrary = () => {
   useEffect(() => {
     let stopCloud: (() => void) | undefined;
     let generation = 0;
+    let identity: string | undefined;
     const stopAuth = onIdTokenChanged(auth, async (account) => {
+      const id = account && !account.isAnonymous ? account.uid : "guest";
+      // Token refreshes must not cancel a guest migration already in progress.
+      if (identity === id) return;
+      identity = id;
       const run = ++generation;
       stopCloud?.();
       ready.current = false;
       setUser(account?.isAnonymous ? null : account);
-      const id = account && !account.isAnonymous ? account.uid : "guest";
       const wasGuest = owner.current === "guest";
       const guestState = wasGuest ? current.current : undefined;
       owner.current = id;
