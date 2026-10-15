@@ -396,8 +396,6 @@ export const Reader = ({
                     ? "PDF reading"
                     : "Web reading"}
               </span>
-              <span aria-hidden="true">·</span>
-              <span>Take your time</span>
             </div>
             <h1 tabIndex={-1}>{reading.title}</h1>
             <p className="article-description">{reading.description}</p>
@@ -413,27 +411,6 @@ export const Reader = ({
                 )}
               </p>
             )}
-            <label className="reader-model">
-              Reading model{" "}
-              <select
-                value={model}
-                onChange={(event) => {
-                  setModel(event.target.value);
-                  keepModel(event.target.value);
-                }}
-              >
-                {!models.some((item) => item.id === model) && (
-                  <option value={model}>
-                    Selected model unavailable — choose a model
-                  </option>
-                )}
-                {models.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             <div className="reading-instruction flex items-center gap-2">
               <Icon name="pen" />
               <span>Select a line. Make it yours.</span>
@@ -538,11 +515,6 @@ export const Reader = ({
               </section>
             ))}
           </div>
-          <footer className="article-end">
-            <span aria-hidden="true">✳</span>
-            <p>A good place to pause.</p>
-            <span>Keep one thought. Come back for another.</span>
-          </footer>
           <QuestionComposer
             inputRef={composerRef}
             onAsk={(question) => {
@@ -580,7 +552,29 @@ export const Reader = ({
                 "text",
               );
             }}
-          />
+          >
+            <label className="reader-model">
+              <span className="sr-only">Reading model</span>
+              <select
+                value={model}
+                onChange={(event) => {
+                  setModel(event.target.value);
+                  keepModel(event.target.value);
+                }}
+              >
+                {!models.some((item) => item.id === model) && (
+                  <option value={model}>
+                    Selected model unavailable — choose a model
+                  </option>
+                )}
+                {models.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </QuestionComposer>
         </article>
         {wide && (
           <Margin
