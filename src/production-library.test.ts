@@ -46,11 +46,59 @@ it("merges account and device work while retaining deletion tombstones and newer
   );
 });
 
-it('retries one answer without replacing unrelated notes or threads',()=>{
- const state=initialLibrary();const reading=state.readings[0];const passage=wholeParagraph(reading,0);
- let saved=saveInsight(state,reading.id,passage,{exchange:{question:'First',answer:'Old',paragraphs:[1],threadId:'first'}},'entry');
- saved=saveInsight(saved,reading.id,passage,{exchange:{question:'Other',answer:'Keep',paragraphs:[1],threadId:'other'},note:'My note'},'unused');
- const retried=saveInsight(saved,reading.id,passage,{replaceAnswer:{threadId:'first',exchange:{question:'First',answer:'New',paragraphs:[1],threadId:'first'}}},'unused');
- expect(retried.insights[0].note).toBe('My note');
- expect(retried.insights[0].exchanges.map(e=>e.answer)).toEqual(['New','Keep']);
+it("retries one answer without replacing unrelated notes or threads", () => {
+  const state = initialLibrary();
+  const reading = state.readings[0];
+  const passage = wholeParagraph(reading, 0);
+  let saved = saveInsight(
+    state,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        question: "First",
+        answer: "Old",
+        paragraphs: [1],
+        threadId: "first",
+      },
+    },
+    "entry",
+  );
+  saved = saveInsight(
+    saved,
+    reading.id,
+    passage,
+    {
+      exchange: {
+        question: "Other",
+        answer: "Keep",
+        paragraphs: [1],
+        threadId: "other",
+      },
+      note: "My note",
+    },
+    "unused",
+  );
+  const retried = saveInsight(
+    saved,
+    reading.id,
+    passage,
+    {
+      replaceAnswer: {
+        threadId: "first",
+        exchange: {
+          question: "First",
+          answer: "New",
+          paragraphs: [1],
+          threadId: "first",
+        },
+      },
+    },
+    "unused",
+  );
+  expect(retried.insights[0].note).toBe("My note");
+  expect(retried.insights[0].exchanges.map((e) => e.answer)).toEqual([
+    "New",
+    "Keep",
+  ]);
 });
