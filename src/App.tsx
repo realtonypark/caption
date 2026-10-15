@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Header } from "./components/Header";
 import { Library } from "./components/Library";
-import { Reader } from "./components/Reader";
-import { Notepad } from "./components/Notepad";
 import { Link } from "./components/Link";
 import { readingInsights, saveInsight } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
@@ -10,9 +8,25 @@ import { useLibrary } from "./use-library";
 import { importLink, importPdf } from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
-import { Models } from "./components/Models";
 import { FREE_MODELS } from "./services/ai";
 import { listConnections } from "./services/providers";
+
+const Reader = lazy(() =>
+  import("./components/Reader").then((module) => ({ default: module.Reader })),
+);
+const Notepad = lazy(() =>
+  import("./components/Notepad").then((module) => ({
+    default: module.Notepad,
+  })),
+);
+const Models = lazy(() =>
+  import("./components/Models").then((module) => ({ default: module.Models })),
+);
+const PageLoading = () => (
+  <main id="main" className="page-placeholder" role="status">
+    <p>Opening your page…</p>
+  </main>
+);
 
 export const App = () => {
   const {
@@ -135,34 +149,40 @@ export const App = () => {
           }}
         />
       ) : current === "models" ? (
-        <Models key={user?.uid ?? "guest"} user={user} />
+        <Suspense fallback={<PageLoading />}>
+          <Models key={user?.uid ?? "guest"} user={user} />
+        </Suspense>
       ) : current === "notepad" ? (
-        <Notepad state={state} />
+        <Suspense fallback={<PageLoading />}>
+          <Notepad state={state} />
+        </Suspense>
       ) : current === "reading" && loading ? (
         <main id="main" className="page-placeholder" role="status">
           <p>Opening your reading…</p>
         </main>
       ) : reading ? (
-        <Reader
-          key={`${reading.id}:${insightId ?? ""}`}
-          reading={reading}
-          insights={insights}
-          initialInsight={initialInsight}
-          models={user?.uid === modelOwner ? models : FREE_MODELS}
-          onSave={(passage, patch) =>
-            updateLibrary((previous) =>
-              previous.readings.some((item) => item.id === reading.id)
-                ? saveInsight(
-                    previous,
-                    reading.id,
-                    passage,
-                    patch,
-                    crypto.randomUUID(),
-                  )
-                : previous,
-            )
-          }
-        />
+        <Suspense fallback={<PageLoading />}>
+          <Reader
+            key={`${reading.id}:${insightId ?? ""}`}
+            reading={reading}
+            insights={insights}
+            initialInsight={initialInsight}
+            models={user?.uid === modelOwner ? models : FREE_MODELS}
+            onSave={(passage, patch) =>
+              updateLibrary((previous) =>
+                previous.readings.some((item) => item.id === reading.id)
+                  ? saveInsight(
+                      previous,
+                      reading.id,
+                      passage,
+                      patch,
+                      crypto.randomUUID(),
+                    )
+                  : previous,
+              )
+            }
+          />
+        </Suspense>
       ) : (
         <main id="main" className="page-placeholder">
           <h1>This reading is not on your shelf.</h1>
