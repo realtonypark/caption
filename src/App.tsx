@@ -54,6 +54,10 @@ export const App = () => {
         : pathname.startsWith("/read/")
           ? "reading"
           : "library";
+  // A dialog left open by browser Back must not reopen on the next visit.
+  // Sign-in remounts Models on this route, so its selection is preserved.
+  if (current !== "models" && editingProvider !== undefined)
+    setEditingProvider(undefined);
   const reading = state.readings.find(
     (item) => readingPath(item.id) === pathname,
   );
