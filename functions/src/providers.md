@@ -4,4 +4,4 @@
 
 `provider-store.mjs` owns account-scoped connections. Only the authenticated Google account may list or mutate its records. API responses omit credential records. Credentials use AES-256-GCM with a fresh nonce and account/connection additional authenticated data. The encryption key is a Firebase server secret. Firestore client rules deny access to connection collections. Disconnect removes the stored credential.
 
-ChatGPT subscription authorization remains pending the choice between a local connector and an approved hosted OAuth client. A subscription connection must use the supported authorization flow and explicit inference permission; it must never reuse another application's client identity or treat identity-only sign-in as inference authorization.
+ChatGPT subscription support is deferred for now. No subscription tokens are requested or used. When this work resumes, use a supported authorization flow with explicit inference permission; never reuse another application's client identity or treat identity-only sign-in as inference authorization.
