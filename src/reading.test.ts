@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   demoExchange,
+  EXAMPLE_READING_ID,
   initialLibrary,
   mergeLibraries,
   normalizeLink,
   orderReadingsByAddedAt,
   SAMPLE_READINGS,
   answerThreads,
+  sampleTutorialInsights,
   stampLibrary,
   wholeParagraph,
   passageSegments,
@@ -47,6 +49,51 @@ it("seeds a linked tutorial note for each sample and respects its deletion", () 
   expect(
     mergeLibraries(deleted, { readings: [], insights: [] }).insights.some(
       ({ id }) => id === removedId,
+    ),
+  ).toBe(false);
+});
+
+it("seeds a tutorial note for the example reading and respects its deletion", () => {
+  const example = {
+    ...SAMPLE_READINGS[0],
+    id: EXAMPLE_READING_ID,
+    kind: "link" as const,
+    paragraphs: [
+      {
+        text: "Setup. AI agents just started being diligent for them. Payoff.",
+        explanation: "",
+      },
+    ],
+  };
+  const [tutorial] = sampleTutorialInsights([example]);
+  expect(tutorial).toMatchObject({
+    id: `tutorial-${EXAMPLE_READING_ID}`,
+    readingId: EXAMPLE_READING_ID,
+    note: "Tutorial: select a passage and write one thought about it in the margin.",
+    highlighted: true,
+    color: "yellow",
+  });
+  const range = tutorial.passage.ranges[0];
+  expect(
+    example.paragraphs[range.paragraph].text.slice(range.start, range.end),
+  ).toBe(tutorial.passage.quote);
+  expect(
+    sampleTutorialInsights([
+      {
+        ...example,
+        paragraphs: [{ text: "Nothing to annotate here.", explanation: "" }],
+      },
+    ]),
+  ).toEqual([]);
+
+  const deleted = stampLibrary(
+    { readings: [example], insights: [tutorial] },
+    { readings: [example], insights: [] },
+    100,
+  );
+  expect(
+    mergeLibraries(deleted, { readings: [], insights: [] }).insights.some(
+      ({ id }) => id === tutorial.id,
     ),
   ).toBe(false);
 });

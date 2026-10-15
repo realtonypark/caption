@@ -383,7 +383,13 @@ export const SAMPLE_READINGS: Reading[] = [
   },
 ];
 
-const sampleTutorials = [
+export const EXAMPLE_READING_ID = "default-muse-reading";
+
+const sampleTutorials: {
+  readingId: string;
+  paragraph?: number;
+  quote: string;
+}[] = [
   {
     readingId: "quiet-work",
     paragraph: 0,
@@ -400,30 +406,42 @@ const sampleTutorials = [
     paragraph: 0,
     quote: "Eventually the promises began to feel more like invoices.",
   },
-] as const;
+  {
+    readingId: EXAMPLE_READING_ID,
+    quote: "AI agents just started being diligent for them.",
+  },
+];
 
-const sampleTutorialInsights = (readings: Reading[]): Insight[] =>
+export const sampleTutorialInsights = (readings: Reading[]): Insight[] =>
   sampleTutorials.flatMap(({ readingId, paragraph: paragraphIndex, quote }) => {
     const reading = readings.find((item) => item.id === readingId);
-    const paragraph = reading?.paragraphs[paragraphIndex]?.text;
-    const start = paragraph?.indexOf(quote) ?? -1;
-    if (!reading || !paragraph || start < 0) return [];
-    return [
-      {
-        id: `tutorial-${readingId}`,
-        readingId,
-        passage: {
-          quote,
-          ranges: [
-            { paragraph: paragraphIndex, start, end: start + quote.length },
-          ],
+    if (!reading) return [];
+    // The imported example shifts paragraphs when its source changes, so its
+    // quote is located by scanning instead of a pinned paragraph index.
+    const indexes =
+      paragraphIndex === undefined
+        ? reading.paragraphs.map((_, index) => index)
+        : [paragraphIndex];
+    for (const index of indexes) {
+      const paragraph = reading.paragraphs[index]?.text;
+      const start = paragraph?.indexOf(quote) ?? -1;
+      if (!paragraph || start < 0) continue;
+      return [
+        {
+          id: `tutorial-${readingId}`,
+          readingId,
+          passage: {
+            quote,
+            ranges: [{ paragraph: index, start, end: start + quote.length }],
+          },
+          note: "Tutorial: select a passage and write one thought about it in the margin.",
+          exchanges: [],
+          highlighted: true,
+          color: "yellow",
         },
-        note: "Tutorial: select a passage and write one thought about it in the margin.",
-        exchanges: [],
-        highlighted: true,
-        color: "yellow",
-      },
-    ];
+      ];
+    }
+    return [];
   });
 
 export const orderReadingsByAddedAt = (readings: Reading[]) =>
