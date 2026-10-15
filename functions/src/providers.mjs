@@ -22,6 +22,20 @@ const headers = (id, key) => ({
 });
 export const discoverModels = async (id, key, signal, request = fetch) => {
   const provider = providerInfo(id);
+  // The OpenRouter model catalogue is public, even with an invalid key.
+  if (id === "openrouter") {
+    const validation = await request(`${provider.base}/key`, {
+      headers: headers(id, key),
+      signal,
+    });
+    await validation.body?.cancel();
+    if (!validation.ok)
+      throw new Error(
+        validation.status === 401 || validation.status === 403
+          ? "The key was rejected by this provider."
+          : "Could not validate this provider key. Try again.",
+      );
+  }
   const response = await request(`${provider.base}/models`, {
     headers: headers(id, key),
     signal,
@@ -35,6 +49,28 @@ export const discoverModels = async (id, key, signal, request = fetch) => {
     );
   }
   const data = await response.json();
+  if (id === "anthropic") {
+    let cursor = data.last_id;
+    let more = data.has_more;
+    while (more) {
+      if (!cursor)
+        throw new Error("The provider returned an incomplete model list.");
+      const next = await request(
+        `${provider.base}/models?after_id=${encodeURIComponent(cursor)}`,
+        { headers: headers(id, key), signal },
+      );
+      if (!next.ok) {
+        await next.body?.cancel();
+        throw new Error("Could not load all models from this provider.");
+      }
+      const page = await next.json();
+      data.data.push(...page.data);
+      if (page.has_more && page.last_id === cursor)
+        throw new Error("The provider returned an incomplete model list.");
+      cursor = page.last_id;
+      more = page.has_more;
+    }
+  }
   const models = (data.data ?? data.models ?? [])
     .filter((m) => {
       if (id === "openrouter")
@@ -50,12 +86,31 @@ export const discoverModels = async (id, key, signal, request = fetch) => {
       id: m.id,
       name: m.name || m.display_name || m.id,
       reasoning:
-        m.supported_parameters?.includes("reasoning") ??
-        /^(gpt-[56]|o[134]-|claude-(opus|sonnet)|muse-)/.test(m.id),
+        id === "anthropic"
+          ? !!m.capabilities?.thinking?.supported
+          : (m.supported_parameters?.includes("reasoning") ??
+            /^(gpt-[56]|o[134]-|claude-(opus|sonnet)|muse-)/.test(m.id)),
+      ...(id === "anthropic" ? { parameters: anthropicParameters(m) } : {}),
     }));
   if (!models.length)
     throw new Error("This account has no available reading models.");
   return models;
+};
+const anthropicParameters = (model) => {
+  const maxTokens = Math.min(model.max_tokens || 16384, 32768);
+  const types = model.capabilities?.thinking?.types;
+  const effort = ["max", "xhigh", "high", "medium", "low"].find(
+    (level) => model.capabilities?.effort?.[level]?.supported,
+  );
+  return {
+    max_tokens: maxTokens,
+    ...(types?.adaptive?.supported
+      ? { thinking: { type: "adaptive" } }
+      : types?.enabled?.supported && maxTokens > 2048
+        ? { thinking: { type: "enabled", budget_tokens: maxTokens - 1024 } }
+        : {}),
+    ...(effort ? { output_config: { effort } } : {}),
+  };
 };
 export const providerRequest = async (
   body,
@@ -90,12 +145,7 @@ export const providerRequest = async (
       messages: messages.slice(1),
       stream: true,
       max_tokens: 16384,
-      ...(model.reasoning
-        ? {
-            thinking: { type: "adaptive" },
-            output_config: { effort: /opus/.test(model.id) ? "max" : "high" },
-          }
-        : {}),
+      ...model.parameters,
     };
   } else {
     endpoint = "responses";

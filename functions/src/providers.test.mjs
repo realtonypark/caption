@@ -38,6 +38,8 @@ test("validates keys through provider model discovery and never forwards arbitra
     "private-key",
     undefined,
     async (url) => {
+      if (url === "https://openrouter.ai/api/v1/key")
+        return Response.json({ data: {} });
       assert.equal(url, "https://openrouter.ai/api/v1/models");
       return Response.json({
         data: [
@@ -56,6 +58,13 @@ test("validates keys through provider model discovery and never forwards arbitra
     { id: "model", name: "Readable", reasoning: true },
   ]);
   await assert.rejects(
+    discoverModels("openrouter", "bad-key", undefined, async (url) => {
+      assert.equal(url, "https://openrouter.ai/api/v1/key");
+      return new Response("", { status: 401 });
+    }),
+    /rejected/,
+  );
+  await assert.rejects(
     discoverModels("http://private.host", "key"),
     /Unknown provider/,
   );
@@ -68,6 +77,76 @@ test("validates keys through provider model discovery and never forwards arbitra
     ),
     /rejected/,
   );
+});
+test("discovers all Anthropic pages and sends only supported thinking and effort", async () => {
+  const models = await discoverModels(
+    "anthropic",
+    "key",
+    undefined,
+    async (url) =>
+      Response.json(
+        url.includes("after_id=")
+          ? { data: [{ id: "old-model", max_tokens: 4096 }], has_more: false }
+          : {
+              data: [
+                {
+                  id: "adaptive-model",
+                  max_tokens: 64000,
+                  capabilities: {
+                    thinking: {
+                      supported: true,
+                      types: { adaptive: { supported: true } },
+                    },
+                    effort: {
+                      max: { supported: false },
+                      high: { supported: true },
+                    },
+                  },
+                },
+                {
+                  id: "extended-model",
+                  max_tokens: 8192,
+                  capabilities: {
+                    thinking: {
+                      supported: true,
+                      types: { enabled: { supported: true } },
+                    },
+                  },
+                },
+              ],
+              has_more: true,
+              last_id: "extended-model",
+            },
+      ),
+  );
+  assert.equal(models.length, 3);
+  for (const model of models) {
+    await providerRequest(
+      { ...body, model: model.id },
+      { provider: "anthropic", models, enabled: models.map((m) => m.id) },
+      "key",
+      undefined,
+      async (_url, options) => {
+        const sent = JSON.parse(options.body);
+        if (model.id === "adaptive-model") {
+          assert.deepEqual(sent.thinking, { type: "adaptive" });
+          assert.deepEqual(sent.output_config, { effort: "high" });
+          assert.equal(sent.max_tokens, 32768);
+        } else if (model.id === "extended-model") {
+          assert.deepEqual(sent.thinking, {
+            type: "enabled",
+            budget_tokens: 7168,
+          });
+          assert.equal(sent.output_config, undefined);
+        } else {
+          assert.equal(sent.thinking, undefined);
+          assert.equal(sent.output_config, undefined);
+          assert.equal(sent.max_tokens, 4096);
+        }
+        return new Response("");
+      },
+    );
+  }
 });
 test("uses each provider protocol without search or cross-provider fallback", async () => {
   for (const provider of ["openrouter", "openai", "anthropic", "meta"]) {

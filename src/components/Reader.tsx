@@ -155,6 +155,12 @@ export const Reader = ({
     scope: "passage" | "text" = "passage",
     replace = false,
   ) => {
+    if (!models.some((item) => item.id === model)) {
+      setRequestError(
+        "Your selected model is unavailable. Choose a reading model before asking.",
+      );
+      return;
+    }
     if (requestRef.current) {
       setRequestError(
         "Finish or stop the current answer before asking another question.",
@@ -416,6 +422,11 @@ export const Reader = ({
                   keepModel(event.target.value);
                 }}
               >
+                {!models.some((item) => item.id === model) && (
+                  <option value={model}>
+                    Selected model unavailable — choose a model
+                  </option>
+                )}
                 {models.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}

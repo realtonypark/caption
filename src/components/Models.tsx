@@ -282,6 +282,16 @@ export const Models = ({ user }: { user: User | null }) => {
               keepModel(event.target.value);
             }}
           >
+            {!FREE_MODELS.some((model) => model.id === selected) &&
+              !connections.some((connection) =>
+                connection.enabled.some(
+                  (id) => `${connection.id}::${id}` === selected,
+                ),
+              ) && (
+                <option value={selected}>
+                  Selected model unavailable — choose a model
+                </option>
+              )}
             <optgroup label="Caption · Free">
               {FREE_MODELS.map((model) => (
                 <option key={model.id} value={model.id}>
