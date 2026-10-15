@@ -2012,3 +2012,128 @@ ul {
   opacity: 0.3;
   cursor: default;
 }
+
+/* Account, importing, and live answer controls */
+.account-menu {
+  position: relative;
+}
+.account-popover {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  width: 280px;
+  z-index: 80;
+  padding: 20px;
+  background: #faf8f2;
+  color: #4a493f;
+  border: 1px solid #d8d4c7;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px #0003;
+}
+.account-popover p {
+  overflow-wrap: anywhere;
+  margin-bottom: 10px;
+}
+.account-popover small {
+  display: block;
+  margin-bottom: 16px;
+}
+.import-progress {
+  text-align: center;
+  margin: -32px auto 40px;
+  color: #d8d4c7;
+}
+.reader-model {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  font-size: 13px;
+  color: #777367;
+}
+.reader-model select {
+  padding: 7px 10px;
+  border: 1px solid #d8d4c7;
+  border-radius: 6px;
+  font: inherit;
+  background: #faf8f2;
+  color: #4a493f;
+}
+.reader-error {
+  max-width: 1190px;
+  margin: 0 auto 24px;
+  padding: 12px 18px;
+  background: #f4e6e1;
+  color: #843d28;
+  border-radius: 8px;
+}
+.stop-answer {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 65;
+  padding: 10px 16px;
+  background: #4a493f;
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.exchange-answer > a {
+  display: block;
+  color: #775738;
+  overflow-wrap: anywhere;
+  margin-top: 8px;
+}
+@media (max-width: 719px) {
+  .site-header nav {
+    gap: 14px;
+  }
+  .account-menu > button {
+    max-width: 95px;
+    font-size: 11px;
+  }
+  .account-popover {
+    width: 250px;
+  }
+  .stop-answer {
+    bottom: 72px;
+    right: 16px;
+  }
+}
+.book-row {
+  position: relative;
+}
+.remove-book {
+  position: absolute;
+  right: -40px;
+  top: 55%;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #b2aca0;
+  border-radius: 6px;
+  background: transparent;
+}
+.remove-book:hover {
+  background: #ffffff12;
+  color: #eee7d8;
+}
+.export-notepad {
+  margin: 20px 0 0;
+}
+.exchange-answer > p {
+  white-space: pre-wrap;
+}
+@media (max-width: 719px) {
+  .remove-book {
+    right: -18px;
+    top: 18px;
+    width: 25px;
+    height: 25px;
+  }
+  .remove-book svg {
+    width: 13px;
+    height: 13px;
+  }
+}

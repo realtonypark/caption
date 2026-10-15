@@ -1,10 +1,16 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { SourceInput } from "./SourceInput";
 
 afterEach(cleanup);
 
-it("associates errors with their own source input and clears them independently", () => {
+it("associates errors with their own source input and clears them independently", async () => {
   const add = vi.fn();
   render(<SourceInput onAdd={add} />);
   const link = screen.getByRole("textbox", { name: "Web link" });
@@ -30,7 +36,8 @@ it("associates errors with their own source input and clears them independently"
       files: [new File(["sample"], "reading.pdf", { type: "application/pdf" })],
     },
   });
-  expect(add).toHaveBeenCalledWith("pdf", "reading.pdf");
+  expect(add).toHaveBeenCalledWith("pdf", "reading.pdf", expect.any(File));
+  await waitFor(() => expect(pdf).not.toBeDisabled());
   expect(pdf).toHaveAttribute("aria-invalid", "false");
   expect(pdf).not.toHaveAccessibleDescription(/Choose a PDF file/);
   expect(link).toHaveAccessibleDescription(/Use a link that starts with/);

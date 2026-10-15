@@ -15,9 +15,31 @@ export const ExchangeView = ({
     <div className="exchange-answer">
       <div className="answer-label flex items-center gap-2">
         <Icon name="spark" />
-        <span>Sample AI response</span>
+        <span>
+          {exchange.model
+            ? `AI · ${exchange.model}`
+            : exchange.status === "pending"
+              ? "Thinking…"
+              : exchange.status === "error"
+                ? "Answer interrupted"
+                : "Saved AI response"}
+        </span>
       </div>
-      <p>{exchange.answer}</p>
+      <p>
+        {exchange.answer ||
+          (exchange.status === "pending" ? "Reading the passage…" : "")}
+      </p>
+      {exchange.error && <p role="alert">{exchange.error}</p>}
+      {exchange.sources?.map((source) => (
+        <a
+          key={source.url}
+          href={/^https?:\/\//.test(source.url) ? source.url : undefined}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {source.title || source.url}
+        </a>
+      ))}
       <div className="citations flex flex-wrap gap-2">
         {exchange.paragraphs.map((number) =>
           onParagraph ? (

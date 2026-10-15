@@ -72,7 +72,9 @@ export const QuestionComposer = ({
           <Icon name="up" />
         </button>
       </form>
-      <span className="composer-demo">Demo · sample answers</span>
+      <span className="composer-demo">
+        AI can make mistakes. Check the source.
+      </span>
     </div>
   );
 };

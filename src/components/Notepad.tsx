@@ -1,4 +1,9 @@
-import { notepadGroups, passageLabel, type LibraryState } from "../reading";
+import {
+  notepadMarkdown,
+  notepadGroups,
+  passageLabel,
+  type LibraryState,
+} from "../reading";
 import { readingPath } from "../routing";
 import { ExchangeView } from "./ExchangeView";
 import { Icon } from "./Icon";
@@ -11,6 +16,26 @@ export const Notepad = ({ state }: { state: LibraryState }) => {
       <header className="notepad-header">
         <div className="eyebrow">A place for what stays with you</div>
         <h1>Your Notepad</h1>
+        {groups.length > 0 && (
+          <button
+            type="button"
+            className="paper-button export-notepad"
+            onClick={() => {
+              const url = URL.createObjectURL(
+                new Blob([notepadMarkdown(state)], {
+                  type: "text/markdown;charset=utf-8",
+                }),
+              );
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "caption-notepad.md";
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }}
+          >
+            Export notes
+          </button>
+        )}
         <p>
           Highlights, questions, and little moments of understanding.
           <br /> Kept together, with the pages they came from.

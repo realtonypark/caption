@@ -2,6 +2,7 @@ export interface Paragraph {
   text: string;
   explanation: string;
   heading?: string;
+  page?: number;
 }
 export interface Reading {
   id: string;
@@ -12,6 +13,7 @@ export interface Reading {
   location?: string;
   design: number;
   paragraphs: Paragraph[];
+  updatedAt?: number;
 }
 export interface TextRange {
   paragraph: number;
@@ -52,7 +54,7 @@ export const READING_ACTIONS: Record<
   },
   check: {
     label: "Fact-check",
-    hint: "Examine the claim with a sample response",
+    hint: "Examine the claim and its supporting evidence",
     question: "Does this still hold up?",
   },
   connect: {
@@ -80,6 +82,10 @@ export interface Exchange {
   threadId?: string;
   action?: ReadingAction;
   scope?: "passage" | "text";
+  model?: string;
+  status?: "pending" | "error";
+  error?: string;
+  sources?: { url: string; title?: string }[];
 }
 export interface Insight {
   id: string;
@@ -89,6 +95,7 @@ export interface Insight {
   exchanges: Exchange[];
   highlighted?: boolean;
   color?: Marker;
+  updatedAt?: number;
 }
 export interface InsightPatch {
   note?: string;
@@ -97,13 +104,107 @@ export interface InsightPatch {
   highlighted?: boolean;
   color?: Marker;
   removeThread?: string;
+  replaceAnswer?: { threadId: string; exchange: Exchange };
 }
 export interface LibraryState {
   readings: Reading[];
   insights: Insight[];
+  deletedReadings?: Record<string, number>;
+  deletedInsights?: Record<string, number>;
 }
 
 export const BOOK_DESIGN_COUNT = 6;
+export const stampLibrary = (
+  before: LibraryState,
+  next: LibraryState,
+  now: number,
+): LibraryState => {
+  const stamp = <T extends { id: string; updatedAt?: number }>(
+    old: T[],
+    values: T[],
+  ) =>
+    values.map((value) =>
+      old.find((item) => item.id === value.id) === value
+        ? value
+        : { ...value, updatedAt: now },
+    );
+  const removed = (
+    old: { id: string }[],
+    values: { id: string }[],
+    tombstones: Record<string, number> = {},
+  ) => ({
+    ...tombstones,
+    ...Object.fromEntries(
+      old
+        .filter((item) => !values.some((value) => value.id === item.id))
+        .map((item) => [item.id, now]),
+    ),
+  });
+  return {
+    ...next,
+    readings: stamp(before.readings, next.readings),
+    insights: stamp(before.insights, next.insights),
+    deletedReadings: removed(
+      before.readings,
+      next.readings,
+      next.deletedReadings,
+    ),
+    deletedInsights: removed(
+      before.insights,
+      next.insights,
+      next.deletedInsights,
+    ),
+  };
+};
+export const mergeLibraries = (
+  local: LibraryState,
+  remote: LibraryState,
+): LibraryState => {
+  const tombstones = (
+    a: Record<string, number> = {},
+    b: Record<string, number> = {},
+  ) =>
+    Object.fromEntries(
+      [...new Set([...Object.keys(a), ...Object.keys(b)])].map((id) => [
+        id,
+        Math.max(a[id] ?? 0, b[id] ?? 0),
+      ]),
+    );
+  const deletedReadings = tombstones(
+    local.deletedReadings,
+    remote.deletedReadings,
+  );
+  const deletedInsights = tombstones(
+    local.deletedInsights,
+    remote.deletedInsights,
+  );
+  const merge = <T extends { id: string; updatedAt?: number }>(
+    a: T[],
+    b: T[],
+    deleted: Record<string, number>,
+  ) => {
+    const values = new Map<string, T>();
+    for (const value of [...b, ...a]) {
+      const previous = values.get(value.id);
+      if (
+        (!previous || (value.updatedAt ?? 0) >= (previous.updatedAt ?? 0)) &&
+        (deleted[value.id] === undefined ||
+          (value.updatedAt ?? 0) > deleted[value.id])
+      )
+        values.set(value.id, value);
+    }
+    return [...values.values()];
+  };
+  const readings = merge(local.readings, remote.readings, deletedReadings);
+  return {
+    readings,
+    insights: merge(local.insights, remote.insights, deletedInsights).filter(
+      (insight) => readings.some((reading) => reading.id === insight.readingId),
+    ),
+    deletedReadings,
+    deletedInsights,
+  };
+};
 export const SAMPLE_READINGS: Reading[] = [
   {
     id: "quiet-work",
@@ -314,11 +415,21 @@ export const saveInsight = (
     (entry) =>
       entry.readingId === readingId && samePassage(entry.passage, passage),
   );
-  const keptExchanges = (patch.exchanges ?? previous?.exchanges ?? []).filter(
-    (exchange) =>
-      !patch.removeThread ||
-      (exchange.threadId ?? previous?.id) !== patch.removeThread,
-  );
+  const lastAnswer = patch.replaceAnswer
+    ? previous?.exchanges.findLast(
+        (exchange) =>
+          (exchange.threadId ?? previous.id) === patch.replaceAnswer?.threadId,
+      )
+    : undefined;
+  const keptExchanges = (patch.exchanges ?? previous?.exchanges ?? [])
+    .map((exchange) =>
+      exchange === lastAnswer ? patch.replaceAnswer!.exchange : exchange,
+    )
+    .filter(
+      (exchange) =>
+        !patch.removeThread ||
+        (exchange.threadId ?? previous?.id) !== patch.removeThread,
+    );
   const entry: Insight = {
     id: previous?.id ?? id,
     readingId,
@@ -475,3 +586,23 @@ export const answerThreads = (insights: Insight[]): AnswerThread[] => {
       a.passage.ranges[0].start - b.passage.ranges[0].start,
   );
 };
+
+export const notepadMarkdown = (state: LibraryState): string =>
+  [
+    "# Caption Notepad",
+    ...notepadGroups(state).flatMap(({ reading, insights }) => [
+      `## ${reading.title}`,
+      reading.location ? `Source: ${reading.location}` : reading.author,
+      ...insights.flatMap((insight) => [
+        `### ${passageLabel(insight.passage)}`,
+        `> ${insight.passage.quote.replace(/\n/g, "\n> ")}`,
+        insight.note ? `Note: ${insight.note}` : "",
+        ...insight.exchanges.map(
+          (exchange) =>
+            `Question: ${exchange.question}\n\n${exchange.answer}${exchange.model ? `\n\nModel: ${exchange.model}` : ""}`,
+        ),
+      ]),
+    ]),
+  ]
+    .filter(Boolean)
+    .join("\n\n");

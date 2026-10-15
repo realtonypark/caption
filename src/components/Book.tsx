@@ -4,9 +4,11 @@ import { Icon } from "./Icon";
 export const Book = ({
   reading,
   onOpen,
+  onRemove,
 }: {
   reading: Reading;
   onOpen: (book: HTMLButtonElement) => void;
+  onRemove?: () => void;
 }) => {
   const contextId = useId();
   return (
@@ -37,6 +39,16 @@ export const Book = ({
           {reading.author}. {reading.description}
         </span>
       </button>
+      {onRemove && (
+        <button
+          type="button"
+          className="remove-book"
+          aria-label={`Remove ${reading.title}`}
+          onClick={onRemove}
+        >
+          <Icon name="trash" />
+        </button>
+      )}
     </li>
   );
 };

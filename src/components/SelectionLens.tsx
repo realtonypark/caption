@@ -487,7 +487,9 @@ export const SelectionLens = ({
                 ))}
               </div>
             )}
-            <span className="lens-demo">Demo · sample answers</span>
+            <span className="lens-demo">
+              AI can make mistakes. Check the source.
+            </span>
           </form>
         )}
         <span className="lens-pointer" aria-hidden="true" />

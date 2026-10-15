@@ -12,7 +12,7 @@ export const WebSwitch = ({
     className="web-switch"
     aria-label="Search the web"
     aria-pressed={on}
-    title="Web search preview. Demo answers use sample text."
+    title="Search the web for supporting sources"
     onMouseDown={(event) => event.preventDefault()}
     onClick={() => onChange(!on)}
   >

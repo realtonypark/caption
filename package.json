@@ -8,18 +8,25 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest --ui",
-    "coverage": "vitest run --coverage"
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:backend": "npm --prefix functions test",
+    "test:rules": "node tests/firestore-rules.mjs"
   },
   "dependencies": {
+    "@llamaindex/liteparse-wasm": "^2.16.0",
     "@tailwindcss/vite": "^4.3.3",
+    "firebase": "^13.0.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "tailwindcss": "^4.3.3"
+    "tailwindcss": "^4.3.3",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@babel/core": "^8.0.6",
     "@eslint/js": "^10.0.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@rolldown/plugin-babel": "^0.2.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -43,5 +50,8 @@
   },
   "allowScripts": {
     "fsevents@2.3.3": true
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.0"
   }
 }

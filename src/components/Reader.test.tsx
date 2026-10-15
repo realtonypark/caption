@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -8,6 +14,26 @@ import {
   demoExchange,
 } from "../reading";
 import { Reader } from "./Reader";
+
+vi.mock("../services/ai", async () => {
+  const { demoExchange, READING_ACTIONS } = await import("../reading");
+  const { FREE_MODELS } = await import("../../functions/src/models.mjs");
+  return {
+    FREE_MODELS,
+    questionFor: (action: keyof typeof READING_ACTIONS, question?: string) =>
+      question || READING_ACTIONS[action].question,
+    requestAnswer: vi.fn(async (options) => ({
+      ...demoExchange(
+        options.reading,
+        options.passage,
+        options.question,
+        options.action,
+        options.scope,
+      ),
+      model: options.model,
+    })),
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -123,7 +149,7 @@ const ReaderDemo = () => {
   );
 };
 
-it("starts a question by typing and keeps follow-ups in their own answer thread", () => {
+it("starts a question by typing and keeps follow-ups in their own answer thread", async () => {
   render(<ReaderDemo />);
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
   fireEvent.keyDown(document.body, { key: "W" });
@@ -136,11 +162,21 @@ it("starts a question by typing and keeps follow-ups in their own answer thread"
   fireEvent.click(screen.getByRole("button", { name: /^Ask$/ }));
   expect(screen.queryByRole("toolbar")).not.toBeInTheDocument();
   expect(screen.getByText("Why does this matter?")).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "Stop answer" }),
+    ).not.toBeInTheDocument(),
+  );
   const followUp = screen.getByRole("textbox", { name: "Ask a follow-up" });
   fireEvent.change(followUp, { target: { value: "Give me an example." } });
   fireEvent.click(screen.getByRole("button", { name: "Send follow-up" }));
   expect(screen.getByText("1 follow-up")).toBeInTheDocument();
   expect(screen.getByText("Give me an example.")).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "Stop answer" }),
+    ).not.toBeInTheDocument(),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Collapse note" }));
   expect(
     screen.getByRole("button", { name: "Open answer: Why does this matter?" }),
@@ -153,6 +189,11 @@ it("starts a question by typing and keeps follow-ups in their own answer thread"
   expect(
     screen.getByRole("article", { name: "Explain answer" }),
   ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "Stop answer" }),
+    ).not.toBeInTheDocument(),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Delete question" }));
   expect(
     screen.queryByRole("article", { name: "Explain answer" }),
@@ -371,7 +412,7 @@ it("keeps note and question editors open when Escape dismisses an IME candidate"
   expect(composer).toHaveValue("Draft question");
 });
 
-it("anchors whole-text answers to a visible paragraph or the nearest offscreen one", () => {
+it("anchors whole-text answers to a visible paragraph or the nearest offscreen one", async () => {
   const reading = initialLibrary().readings[0];
   const save = vi.fn();
   const view = render(<Reader reading={reading} insights={[]} onSave={save} />);
@@ -391,7 +432,9 @@ it("anchors whole-text answers to a visible paragraph or the nearest offscreen o
   fireEvent.click(
     screen.getByRole("button", { name: "Ask about the whole text" }),
   );
-  expect(save.mock.calls[0][0].ranges[0].paragraph).toBe(1);
+  await waitFor(() =>
+    expect(save.mock.calls[0]?.[0].ranges[0].paragraph).toBe(1),
+  );
   paragraphs.forEach((paragraph, index) => {
     vi.mocked(paragraph.getBoundingClientRect).mockReturnValue(
       rect(-1000 + index * 100, -900 + index * 100),
@@ -401,5 +444,9 @@ it("anchors whole-text answers to a visible paragraph or the nearest offscreen o
   fireEvent.click(
     screen.getByRole("button", { name: "Ask about the whole text" }),
   );
-  expect(save.mock.calls[1][0].ranges[0].paragraph).toBe(paragraphs.length - 1);
+  await waitFor(() =>
+    expect(save.mock.calls[1]?.[0].ranges[0].paragraph).toBe(
+      paragraphs.length - 1,
+    ),
+  );
 });

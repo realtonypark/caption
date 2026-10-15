@@ -3,6 +3,7 @@ import { copyText } from "../clipboard";
 import { passageLabel, READING_ACTIONS, type AnswerThread } from "../reading";
 import { ExchangeView } from "./ExchangeView";
 import { Icon } from "./Icon";
+import { FREE_MODELS } from "../../functions/src/models.mjs";
 
 export const AnswerCard = ({
   thread,
@@ -32,6 +33,7 @@ export const AnswerCard = ({
       ? "Whole text"
       : READING_ACTIONS[first.action ?? "ask"].label;
   const follow = thread.exchanges.length - 1;
+  const busy = thread.exchanges.at(-1)?.status === "pending";
   if (!active)
     return (
       <button
@@ -102,11 +104,20 @@ export const AnswerCard = ({
         ))}
       </div>
       <footer className="answer-card-footer">
-        <span>Sample AI response</span>
+        <span title={thread.exchanges.at(-1)?.model}>
+          {busy
+            ? "Thinking…"
+            : FREE_MODELS.find(
+                (model) => model.id === thread.exchanges.at(-1)?.model,
+              )?.name ||
+              thread.exchanges.at(-1)?.model?.split("/").at(-1) ||
+              "AI response"}
+        </span>
         <button
           type="button"
           className="card-icon"
           aria-label="Try again"
+          disabled={busy}
           title="Try again"
           onClick={() => {
             onRetry();
@@ -164,6 +175,7 @@ export const AnswerCard = ({
       >
         <input
           value={draft}
+          disabled={busy}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="Ask a follow-up"
           placeholder="Ask a follow-up"
@@ -176,7 +188,7 @@ export const AnswerCard = ({
         />
         <button
           type="submit"
-          disabled={!draft.trim()}
+          disabled={busy || !draft.trim()}
           aria-label="Send follow-up"
         >
           <Icon name="up" />
