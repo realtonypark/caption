@@ -77,3 +77,21 @@ it("preserves guest work when duplicate account token events arrive during migra
     expect.arrayContaining([expect.objectContaining({ id: imported.id })]),
   );
 });
+
+it("keeps a signed-in deep link loading until its cloud library arrives", async () => {
+  const saved = initialLibrary();
+  vi.mocked(localLibrary).mockResolvedValue(saved);
+  const accountUser = { uid: "google-account", isAnonymous: false } as User;
+  account.currentUser = accountUser;
+  const { result } = renderHook(useLibrary);
+
+  expect(result.current.loading).toBe(true);
+  await act(async () => {
+    await account.notify!(accountUser);
+  });
+  expect(result.current.loading).toBe(true);
+
+  const receiveCloud = vi.mocked(watchLibrary).mock.calls.at(-1)![1];
+  act(() => receiveCloud(saved));
+  expect(result.current.loading).toBe(false);
+});

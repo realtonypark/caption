@@ -15,7 +15,14 @@ import { FREE_MODELS } from "./services/ai";
 import { listConnections } from "./services/providers";
 
 export const App = () => {
-  const { state, update: updateLibrary, user, warning, status } = useLibrary();
+  const {
+    state,
+    update: updateLibrary,
+    user,
+    warning,
+    status,
+    loading,
+  } = useLibrary();
   const [progress, setProgress] = useState("");
   const [models, setModels] =
     useState<readonly { id: string; name: string }[]>(FREE_MODELS);
@@ -131,6 +138,10 @@ export const App = () => {
         <Models key={user?.uid ?? "guest"} user={user} />
       ) : current === "notepad" ? (
         <Notepad state={state} />
+      ) : current === "reading" && loading ? (
+        <main id="main" className="page-placeholder" role="status">
+          <p>Opening your reading…</p>
+        </main>
       ) : reading ? (
         <Reader
           key={`${reading.id}:${insightId ?? ""}`}
