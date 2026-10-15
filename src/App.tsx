@@ -90,6 +90,7 @@ export const App = () => {
       return;
     }
     exampleAttempted.current = owner;
+    const attemptOwner = owner;
     setProgress("Adding the example reading…");
     void importLink(EXAMPLE_URL, setProgress)
       .then((reading) => {
@@ -104,9 +105,10 @@ export const App = () => {
                 readings: [...previous.readings, { ...reading, id: EXAMPLE_ID }],
               },
         );
-        setProgress("");
+        if (exampleAttempted.current === attemptOwner) setProgress("");
       })
       .catch((error: unknown) => {
+        if (exampleAttempted.current !== attemptOwner) return;
         exampleAttempted.current = undefined;
         setProgress(
           `Could not add the example reading: ${error instanceof Error ? error.message : "The source could not be imported."}`,
