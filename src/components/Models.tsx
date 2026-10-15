@@ -23,6 +23,11 @@ export const Models = ({ user }: { user: User | null }) => {
   const [modelsFor, setModelsFor] = useState<string>();
   const [modelQuery, setModelQuery] = useState("");
   const [selected, setSelected] = useState(preferredModel);
+  const search = query.trim().toLowerCase();
+  const filteredProviders = PROVIDER_CATALOG.filter((provider) =>
+    provider.name.toLowerCase().includes(search),
+  );
+  const showSubscription = "chatgpt".includes(search);
   useEffect(() => {
     let alive = true;
     if (user)
@@ -234,10 +239,8 @@ export const Models = ({ user }: { user: User | null }) => {
                   placeholder="Search providers"
                 />
               </label>
-              <small>API</small>
-              {PROVIDER_CATALOG.filter((provider) =>
-                provider.name.toLowerCase().includes(query.toLowerCase()),
-              ).map((provider) => (
+              {filteredProviders.length > 0 && <small>API</small>}
+              {filteredProviders.map((provider) => (
                 <button
                   type="button"
                   key={provider.id}
@@ -251,17 +254,24 @@ export const Models = ({ user }: { user: User | null }) => {
                   <span>API key →</span>
                 </button>
               ))}
-              <small>Subscription</small>
-              <button
-                type="button"
-                onClick={() =>
-                  setError(
-                    "ChatGPT subscription connection setup is pending. The supported connection method must be configured before authorization.",
-                  )
-                }
-              >
-                ChatGPT<span>Subscription →</span>
-              </button>
+              {showSubscription && (
+                <>
+                  <small>Subscription</small>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setError(
+                        "ChatGPT subscription connection setup is pending. The supported connection method must be configured before authorization.",
+                      )
+                    }
+                  >
+                    ChatGPT<span>Subscription →</span>
+                  </button>
+                </>
+              )}
+              {!filteredProviders.length && !showSubscription && (
+                <p className="models-help">No matching providers.</p>
+              )}
             </div>
           )}
         </div>
