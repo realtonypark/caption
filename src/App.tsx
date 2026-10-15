@@ -3,8 +3,10 @@ import { Header } from "./components/Header";
 import { Library } from "./components/Library";
 import { Link } from "./components/Link";
 import {
+  EXAMPLE_READING_ID,
   orderReadingsByAddedAt,
   readingInsights,
+  sampleTutorialInsights,
   saveInsight,
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
@@ -33,7 +35,6 @@ const PageLoading = () => (
   </main>
 );
 const EXAMPLE_URL = "https://tonypark.dev/2026/09/29/muse/";
-const EXAMPLE_ID = "default-muse-reading";
 
 export const App = () => {
   const {
@@ -85,9 +86,10 @@ export const App = () => {
       return;
     const existing = latestLibrary.current.state;
     if (
-      existing.deletedReadings?.[EXAMPLE_ID] ||
+      existing.deletedReadings?.[EXAMPLE_READING_ID] ||
       existing.readings.some(
-        (item) => item.id === EXAMPLE_ID || item.location === EXAMPLE_URL,
+        (item) =>
+          item.id === EXAMPLE_READING_ID || item.location === EXAMPLE_URL,
       )
     ) {
       exampleAttempted.current = owner;
@@ -98,17 +100,27 @@ export const App = () => {
     setProgress("Adding the example reading…");
     void importLink(EXAMPLE_URL, setProgress)
       .then((reading) => {
-        latestLibrary.current.updateLibrary((previous) =>
-          previous.deletedReadings?.[EXAMPLE_ID] ||
-          previous.readings.some(
-            (item) => item.id === EXAMPLE_ID || item.location === EXAMPLE_URL,
+        latestLibrary.current.updateLibrary((previous) => {
+          if (
+            previous.deletedReadings?.[EXAMPLE_READING_ID] ||
+            previous.readings.some(
+              (item) =>
+                item.id === EXAMPLE_READING_ID ||
+                item.location === EXAMPLE_URL,
+            )
           )
-            ? previous
-            : {
-                ...previous,
-                readings: [...previous.readings, { ...reading, id: EXAMPLE_ID }],
-              },
-        );
+            return previous;
+          const imported = { ...reading, id: EXAMPLE_READING_ID };
+          const tutorials = sampleTutorialInsights([imported]).filter(
+            (insight) =>
+              previous.deletedInsights?.[insight.id] === undefined,
+          );
+          return {
+            ...previous,
+            readings: [...previous.readings, imported],
+            insights: [...previous.insights, ...tutorials],
+          };
+        });
         if (exampleAttempted.current === attemptOwner) setProgress("");
       })
       .catch((error: unknown) => {
