@@ -8,7 +8,7 @@ export const Library = ({
 }: {
   readings: Reading[];
   onAdd: (kind: "link" | "pdf", label: string) => void;
-  onOpen: (id: string) => void;
+  onOpen: (id: string, book: HTMLButtonElement) => void;
 }) => (
   <main id="main" className="library-page">
     <SourceInput onAdd={onAdd} />
@@ -23,7 +23,7 @@ export const Library = ({
             <Book
               key={reading.id}
               reading={reading}
-              onOpen={() => onOpen(reading.id)}
+              onOpen={(book) => onOpen(reading.id, book)}
             />
           ))}
         </ul>

@@ -13,6 +13,7 @@ import {
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { readLibrary, writeLibrary } from "./storage";
+import { openBook } from "./open-book";
 
 export const App = () => {
   const [restored] = useState(readLibrary);
@@ -50,7 +51,9 @@ export const App = () => {
       {current === "library" ? (
         <Library
           readings={state.readings}
-          onOpen={(id) => navigate(readingPath(id))}
+          onOpen={(id, book) => {
+            void openBook(book, () => navigate(readingPath(id)));
+          }}
           onAdd={(kind, label) => {
             const reading = makePreview(
               crypto.randomUUID(),

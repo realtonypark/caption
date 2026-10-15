@@ -71,7 +71,7 @@ export const Reader = ({
               <span aria-hidden="true">·</span>
               <span>Take your time</span>
             </div>
-            <h1>{reading.title}</h1>
+            <h1 tabIndex={-1}>{reading.title}</h1>
             <p className="article-description">{reading.description}</p>
             <p className="article-byline">{reading.author}</p>
             {reading.location && (

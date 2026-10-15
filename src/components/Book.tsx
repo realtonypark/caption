@@ -6,16 +6,17 @@ export const Book = ({
   onOpen,
 }: {
   reading: Reading;
-  onOpen: () => void;
+  onOpen: (book: HTMLButtonElement) => void;
 }) => {
   const contextId = useId();
   return (
     <li className="book-row">
       <button
+        id={`reading-book-${encodeURIComponent(reading.id)}`}
         type="button"
         className="book-button"
         data-design={reading.design}
-        onClick={onOpen}
+        onClick={(event) => onOpen(event.currentTarget)}
         aria-label={`Read ${reading.title}`}
         aria-describedby={contextId}
       >

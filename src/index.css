@@ -454,6 +454,110 @@ ul {
   font-size: 14px;
   padding: 36px 0;
 }
+.book-opening {
+  overflow: hidden;
+}
+.book-source {
+  visibility: hidden;
+}
+.book-opening-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: clip;
+}
+.book-flight {
+  position: absolute;
+  margin: 0;
+  pointer-events: none;
+  perspective: 1600px;
+}
+.book-flight .book-volume {
+  animation: none;
+}
+.book-flight .book-top,
+.opening-paper {
+  transform-origin: left bottom;
+  backface-visibility: hidden;
+}
+.book-flight .book-top {
+  z-index: 1;
+  box-shadow: 0 12px 40px #00000030;
+  backface-visibility: visible;
+  transform-style: preserve-3d;
+}
+.book-flight .book-top::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #eee9de, #faf8f2 12%);
+  transform: rotateY(180deg) translateZ(1px);
+  backface-visibility: hidden;
+}
+.opening-cover-title {
+  position: absolute;
+  inset: 22% 12% auto;
+  font-family: var(--font-title);
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.2;
+  text-wrap: balance;
+  backface-visibility: hidden;
+}
+.opening-paper {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  background: #faf8f2;
+  transform: rotateX(90deg);
+  box-shadow:
+    inset 7px 0 16px #68563720,
+    0 10px 50px #00000035;
+  border-radius: 2px;
+}
+.book-opening .opening-paper,
+.book-opening .app-paper {
+  view-transition-name: reading-sheet;
+}
+::view-transition-group(reading-sheet) {
+  animation-duration: 620ms;
+  animation-timing-function: cubic-bezier(0.22, 0.7, 0.18, 1);
+  background: #faf8f2;
+  overflow: clip;
+}
+.book-opening .skip-link {
+  visibility: hidden;
+}
+.book-flight .cover-lines {
+  backface-visibility: hidden;
+}
+::view-transition-old(reading-sheet) {
+  animation: sheet-out 400ms both;
+}
+::view-transition-new(reading-sheet) {
+  animation: sheet-in 500ms 120ms both;
+}
+::view-transition-old(root) {
+  animation: sheet-out 620ms both;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+@keyframes sheet-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 .storage-warning {
   padding: 12px 24px;
   font-size: 12px;
