@@ -1,10 +1,10 @@
 export const firebaseConfig = {
-  projectId: "caption-ai-tpark",
-  appId: "1:550426521265:web:d30cb6bf284a9ea097bc90",
-  storageBucket: "caption-ai-tpark.firebasestorage.app",
-  apiKey: "AIzaSyBqDkA-X0wT8jphS_FM-oBgTOkIQFoxJvU",
-  authDomain: "caption-ai-tpark.firebaseapp.com",
-  messagingSenderId: "550426521265",
-  projectNumber: "550426521265",
+  projectId: "caption-purple",
+  appId: "1:877930644801:web:fd38ff700364b31584cdc0",
+  storageBucket: "caption-purple.firebasestorage.app",
+  apiKey: "AIzaSyAe5rSixpLRxdB2Zvy8_EPRBiN16DfGsno",
+  authDomain: "caption-purple.firebaseapp.com",
+  messagingSenderId: "877930644801",
+  projectNumber: "877930644801",
   version: "2",
 };

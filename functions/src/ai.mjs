@@ -94,7 +94,7 @@ export const answerRequest = async (body, key, signal, request = fetch) => {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
         "X-Title": "Caption",
-        "HTTP-Referer": "https://caption-ai-tpark.web.app",
+        "HTTP-Referer": "https://caption-purple.web.app",
       },
       body: JSON.stringify({
         models:

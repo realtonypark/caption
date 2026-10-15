@@ -6,7 +6,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import { doc, setDoc, getDoc, Timestamp } from "firebase/firestore";
 const env = await initializeTestEnvironment({
-  projectId: "caption-ai-tpark",
+  projectId: "caption-purple",
   firestore: {
     host: "127.0.0.1",
     port: 8080,
