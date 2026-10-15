@@ -227,4 +227,22 @@ test("normalizes Responses and Anthropic streaming and rejects incomplete answer
     ))
       void event;
   }, /before.*completed/);
+  const chat = [];
+  for await (const event of providerEvents(
+    new Response(
+      'data: {"choices":[{"delta":{"content":"Answer"}}]}\n\ndata: {"choices":[{"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+    ).body,
+    "chat",
+  ))
+    chat.push(event);
+  assert.equal(chat[0].choices[0].delta.content, "Answer");
+  await assert.rejects(async () => {
+    for await (const event of providerEvents(
+      new Response(
+        'data: {"choices":[{"delta":{"content":"Partial"}}]}\n\n',
+      ).body,
+      "chat",
+    ))
+      void event;
+  }, /stopped before finishing/);
 });

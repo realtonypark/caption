@@ -62,7 +62,7 @@ export const SelectionLens = ({
   marker: Marker;
   onMarker: (color: Marker) => void;
   onSave: (patch: InsightPatch) => void;
-  onAsk: (action: ReadingAction, question?: string) => void;
+  onAsk: (action: ReadingAction, question?: string) => Promise<boolean>;
   onClose: () => void;
 }) => {
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -113,8 +113,9 @@ export const SelectionLens = ({
     close();
   };
   const run = (action: ReadingAction, question?: string) => {
-    onAsk(action, question);
-    close();
+    void onAsk(action, question).then((accepted) => {
+      if (accepted) close();
+    });
   };
 
   useLayoutEffect(() => {

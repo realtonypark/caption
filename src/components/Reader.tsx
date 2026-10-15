@@ -147,25 +147,25 @@ export const Reader = ({
     document
       .getElementById(`paragraph-${index}`)
       ?.scrollIntoView({ block: "center", behavior: "instant" });
-  const ask = async (
+  const ask = (
     passage: Passage,
     action: ReadingAction,
     question?: string,
     threadId: string = crypto.randomUUID(),
     scope: "passage" | "text" = "passage",
     replace = false,
-  ) => {
+  ): Promise<boolean> => {
     if (!models.some((item) => item.id === model)) {
       setRequestError(
         "Your selected model is unavailable. Choose a reading model before asking.",
       );
-      return;
+      return Promise.resolve(false);
     }
     if (requestRef.current) {
       setRequestError(
         "Finish or stop the current answer before asking another question.",
       );
-      return;
+      return Promise.resolve(false);
     }
     const thread = threads.find((item) => item.id === threadId);
     const history =
@@ -193,64 +193,69 @@ export const Reader = ({
     setPending({ id: threadId, passage, exchanges: [...kept, exchange] });
     setActiveId(threadId);
     setLens(undefined);
-    try {
-      const answer = await requestAnswer({
-        reading,
-        passage,
-        action,
-        question: text,
-        scope,
-        history,
-        model,
-        signal: controller.signal,
-        onText: (answer) => {
-          partial = answer;
-          setPending((value) =>
-            value
-              ? { ...value, exchanges: [...kept, { ...exchange, answer }] }
-              : value,
-          );
-        },
-      });
-      if (controller.signal.aborted) return;
-      if (replace)
-        onSave(passage, {
-          replaceAnswer: { threadId, exchange: { ...answer, threadId } },
+    const run = async () => {
+      try {
+        const answer = await requestAnswer({
+          reading,
+          passage,
+          action,
+          question: text,
+          scope,
+          history,
+          model,
+          signal: controller.signal,
+          onText: (answer) => {
+            partial = answer;
+            setPending((value) =>
+              value
+                ? { ...value, exchanges: [...kept, { ...exchange, answer }] }
+                : value,
+            );
+          },
         });
-      else onSave(passage, { exchange: { ...answer, threadId } });
+        if (controller.signal.aborted) return;
+        if (replace)
+          onSave(passage, {
+            replaceAnswer: { threadId, exchange: { ...answer, threadId } },
+          });
+        else onSave(passage, { exchange: { ...answer, threadId } });
+        setPending(undefined);
+      } catch (error) {
+        if (controller.signal.reason === "discard") return;
+        const message = controller.signal.aborted
+          ? "Answer stopped. You can try again."
+          : error instanceof Error
+            ? error.message
+            : "Could not get an answer.";
+        const failed: Exchange = {
+          ...exchange,
+          answer: partial,
+          status: "error",
+          error: message,
+        };
+        // A failed retry keeps the saved answer; the banner shows the error.
+        if (!replace || removed?.status === "error") {
+          if (replace)
+            onSave(passage, { replaceAnswer: { threadId, exchange: failed } });
+          else onSave(passage, { exchange: failed });
+        }
+        setPending(undefined);
+        setRequestError(message);
+      } finally {
+        if (requestRef.current === controller) requestRef.current = null;
+      }
+    };
+    run().catch(() => {
       setPending(undefined);
-    } catch (error) {
-      if (controller.signal.reason === "discard") return;
-      const message = controller.signal.aborted
-        ? "Answer stopped. You can try again."
-        : error instanceof Error
-          ? error.message
-          : "Could not get an answer.";
-      const failed: Exchange = {
-        ...exchange,
-        answer: partial,
-        status: "error",
-        error: message,
-      };
-      if (replace)
-        onSave(passage, { replaceAnswer: { threadId, exchange: failed } });
-      else onSave(passage, { exchange: failed });
-      setPending(undefined);
-      setRequestError(message);
-    } finally {
-      if (requestRef.current === controller) requestRef.current = null;
-    }
+      setRequestError("Could not get an answer.");
+    });
+    return Promise.resolve(true);
   };
   const followUp = (thread: AnswerThread, question: string) =>
-    void ask(
-      thread.passage,
-      "ask",
-      question,
-      thread.id,
-      thread.exchanges[0].scope,
-    );
+    ask(thread.passage, "ask", question, thread.id, thread.exchanges[0].scope);
   const removeThread = (thread: AnswerThread) => {
-    onSave(thread.passage, { removeThread: thread.id });
+    if (answerThreads(savedInsights).some((item) => item.id === thread.id))
+      onSave(thread.passage, { removeThread: thread.id });
     if (pending?.id === thread.id) {
       requestRef.current?.abort("discard");
       setPending(undefined);
@@ -541,7 +546,7 @@ export const Reader = ({
                       : nearest,
                   undefined,
                 );
-              ask(
+              return ask(
                 wholeParagraph(
                   reading,
                   Number(visible?.paragraph.dataset.paragraph ?? 0),
@@ -602,9 +607,9 @@ export const Reader = ({
           marker={marker}
           onMarker={setMarker}
           onSave={(patch) => onSave(lens.passage, patch)}
-          onAsk={(action, question) => {
-            void ask(lens.passage, action, question);
-          }}
+          onAsk={(action, question) =>
+            ask(lens.passage, action, question)
+          }
           onClose={() => setLens(undefined)}
         />
       )}

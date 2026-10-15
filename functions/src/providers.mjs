@@ -195,7 +195,10 @@ export const providerRequest = async (
 };
 export async function* providerEvents(stream, format) {
   let completed = false;
-  for await (const event of streamEvents(stream)) {
+  // Only chat streams end with [DONE]; other formats send completion events.
+  for await (const event of streamEvents(stream, {
+    requireTerminator: format === "chat",
+  })) {
     if (
       event.error ||
       event.type === "error" ||
