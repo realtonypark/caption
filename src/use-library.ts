@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onIdTokenChanged, type User } from "firebase/auth";
 import { auth } from "./services/firebase";
 import { localLibrary } from "./services/local-library";
 import { watchLibrary, saveCloudLibrary } from "./services/cloud-library";
@@ -73,7 +73,7 @@ export const useLibrary = () => {
   useEffect(() => {
     let stopCloud: (() => void) | undefined;
     let generation = 0;
-    const stopAuth = onAuthStateChanged(auth, async (account) => {
+    const stopAuth = onIdTokenChanged(auth, async (account) => {
       const run = ++generation;
       stopCloud?.();
       ready.current = false;
