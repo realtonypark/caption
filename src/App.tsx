@@ -2,7 +2,11 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { Library } from "./components/Library";
 import { Link } from "./components/Link";
-import { readingInsights, saveInsight } from "./reading";
+import {
+  orderReadingsByAddedAt,
+  readingInsights,
+  saveInsight,
+} from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { useLibrary } from "./use-library";
 import { importLink, importPdf } from "./services/import";
@@ -168,7 +172,7 @@ export const App = () => {
       )}
       {current === "library" ? (
         <Library
-          readings={state.readings}
+          readings={orderReadingsByAddedAt(state.readings)}
           onOpen={(id, book) => {
             void openBook(book, () => navigate(readingPath(id)));
           }}

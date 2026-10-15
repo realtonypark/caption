@@ -9,7 +9,6 @@ import {
   type AnswerThread,
   type Insight,
   type InsightPatch,
-  type Marker,
   type Passage,
   type Reading,
   type ReadingAction,
@@ -84,7 +83,6 @@ export const Reader = ({
       : undefined,
   );
   const [hoveredId, setHoveredId] = useState<string>();
-  const [marker, setMarker] = useState<Marker>("yellow");
   const [cursor, setCursor] = useState<number>();
   const wide = useMedia("(min-width: 1080px)");
   const threads = answerThreads(insights);
@@ -602,8 +600,6 @@ export const Reader = ({
           insight={activeInsight}
           title={reading.title}
           initialMode={lens.mode}
-          marker={marker}
-          onMarker={setMarker}
           onSave={(patch) => onSave(lens.passage, patch)}
           onAsk={(action, question) =>
             ask(lens.passage, action, question)

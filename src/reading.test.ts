@@ -2,17 +2,88 @@ import { describe, expect, it } from "vitest";
 import {
   demoExchange,
   initialLibrary,
+  mergeLibraries,
   normalizeLink,
+  orderReadingsByAddedAt,
+  SAMPLE_READINGS,
   answerThreads,
+  stampLibrary,
   wholeParagraph,
   passageSegments,
   saveInsight,
   stripInvalidMarkers,
 } from "./reading";
 
+const emptyLibrary = () => ({ ...initialLibrary(), insights: [] });
+
+it("seeds a linked tutorial note for each sample and respects its deletion", () => {
+  const initial = initialLibrary();
+  expect(initial.insights).toHaveLength(SAMPLE_READINGS.length);
+  for (const reading of SAMPLE_READINGS) {
+    const tutorial = initial.insights.find(
+      (insight) => insight.readingId === reading.id,
+    );
+    expect(tutorial).toMatchObject({
+      id: `tutorial-${reading.id}`,
+      note: "Tutorial: select a passage and write one thought about it in the margin.",
+      highlighted: true,
+      color: "yellow",
+    });
+    const range = tutorial!.passage.ranges[0];
+    expect(
+      reading.paragraphs[range.paragraph].text.slice(range.start, range.end),
+    ).toBe(tutorial!.passage.quote);
+  }
+
+  const saved = mergeLibraries(
+    { ...initial, insights: [] },
+    { readings: [], insights: [] },
+  );
+  const removedId = saved.insights[0].id;
+  const deleted = stampLibrary(
+    saved,
+    { ...saved, insights: saved.insights.filter(({ id }) => id !== removedId) },
+    100,
+  );
+  expect(
+    mergeLibraries(deleted, { readings: [], insights: [] }).insights.some(
+      ({ id }) => id === removedId,
+    ),
+  ).toBe(false);
+});
+
+it("puts new readings first without changing their position when edited", () => {
+  const initial = emptyLibrary();
+  const added = { ...SAMPLE_READINGS[0], id: "new-reading", kind: "link" as const };
+  const saved = stampLibrary(
+    initial,
+    { ...initial, readings: [...initial.readings, added] },
+    1_000,
+  );
+  expect(saved.readings.find(({ id }) => id === added.id)?.addedAt).toBe(1_000);
+
+  const edited = stampLibrary(
+    saved,
+    {
+      ...saved,
+      readings: saved.readings.map((reading) =>
+        reading.id === added.id ? { ...reading, title: "Edited title" } : reading,
+      ),
+    },
+    2_000,
+  );
+  expect(edited.readings.find(({ id }) => id === added.id)?.addedAt).toBe(1_000);
+  expect(
+    orderReadingsByAddedAt([
+      ...edited.readings,
+      { ...SAMPLE_READINGS[1], id: "older-reading", updatedAt: 500 },
+    ])[0].id,
+  ).toBe(added.id);
+});
+
 describe("a saved reading insight", () => {
   it("keeps highlight, note, and AI exchange together without crossing source boundaries", () => {
-    const initial = initialLibrary();
+    const initial = emptyLibrary();
     const reading = initial.readings[0];
     const passage = {
       quote: reading.paragraphs[0].text.slice(0, 20),
@@ -54,7 +125,7 @@ describe("a saved reading insight", () => {
   });
 
   it("renders overlapping saved ranges without losing or duplicating article text", () => {
-    const initial = initialLibrary();
+    const initial = emptyLibrary();
     const text = initial.readings[0].paragraphs[0].text;
     const first = {
       quote: text.slice(2, 25),
@@ -82,7 +153,7 @@ describe("a saved reading insight", () => {
   });
 
   it("opens nested highlights through their own text regardless of save order", () => {
-    const initial = initialLibrary();
+    const initial = emptyLibrary();
     const text = initial.readings[0].paragraphs[0].text;
     const outer = {
       quote: text.slice(0, 40),
@@ -134,7 +205,7 @@ it("accepts bare hosts with ports while rejecting unsupported schemes", () => {
 });
 
 it("keeps independent question threads and retains notes when a thread is removed", () => {
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const passage = wholeParagraph(reading, 0);
   let state = saveInsight(
@@ -202,7 +273,7 @@ it("keeps independent question threads and retains notes when a thread is remove
 });
 
 it("composes a containing highlight with a nested answer without losing either anchor", () => {
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const outer = wholeParagraph(reading, 0);
   const inner = {

@@ -7,8 +7,10 @@ import {
   wholeParagraph,
 } from "./reading";
 
+const emptyLibrary = () => ({ ...initialLibrary(), insights: [] });
+
 it("merges account and device work while retaining deletion tombstones and newer edits", () => {
-  const base = initialLibrary();
+  const base = emptyLibrary();
   const reading = base.readings[0];
   const passage = wholeParagraph(reading, 0);
   const local = stampLibrary(
@@ -47,7 +49,7 @@ it("merges account and device work while retaining deletion tombstones and newer
 });
 
 it("retries one answer without replacing unrelated notes or threads", () => {
-  const state = initialLibrary();
+  const state = emptyLibrary();
   const reading = state.readings[0];
   const passage = wholeParagraph(reading, 0);
   let saved = saveInsight(
