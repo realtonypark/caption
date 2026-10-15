@@ -4,6 +4,7 @@
     {
       "collectionGroup": "quotas",
       "fieldPath": "expiresAt",
+      "indexes": [],
       "ttl": true
     }
   ]
