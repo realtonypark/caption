@@ -14,6 +14,7 @@ import {
   demoExchange,
 } from "../reading";
 import { Reader } from "./Reader";
+import { requestAnswer } from "../services/ai";
 
 vi.mock("../services/ai", async () => {
   const { demoExchange, READING_ACTIONS } = await import("../reading");
@@ -41,6 +42,46 @@ afterEach(() => {
   vi.unstubAllGlobals();
   window.getSelection()?.removeAllRanges();
   delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+});
+
+it("keeps an unavailable personal model explicit and does not send a question to another model", () => {
+  localStorage.setItem(
+    "caption:reading-model",
+    "removed-connection::private-model",
+  );
+  vi.mocked(requestAnswer).mockClear();
+  const save = vi.fn();
+  try {
+    render(
+      <Reader
+        reading={initialLibrary().readings[0]}
+        insights={[]}
+        onSave={save}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Reading model" })).toHaveValue(
+      "removed-connection::private-model",
+    );
+    expect(
+      screen.getByRole("option", { name: /Selected model unavailable/ }),
+    ).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole("textbox", {
+        name: "Ask anything about the whole text",
+      }),
+      { target: { value: "Why?" } },
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ask about the whole text" }),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Your selected model is unavailable",
+    );
+    expect(requestAnswer).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+  } finally {
+    localStorage.removeItem("caption:reading-model");
+  }
 });
 
 it("opens the nested note from its highlight while keeping the outer note reachable", () => {

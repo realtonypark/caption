@@ -39,6 +39,12 @@ export const requestAnswer = async (
       action,
       scope,
       model,
+      ...(model.includes("::")
+        ? {
+            connectionId: model.split("::")[0],
+            model: model.split("::").slice(1).join("::"),
+          }
+        : {}),
       history: history.slice(-20).flatMap((e) => [
         { role: "user", content: e.question },
         { role: "assistant", content: e.answer },

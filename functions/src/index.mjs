@@ -5,27 +5,17 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { createHash } from "node:crypto";
 import { downloadSource, extractArticle } from "./import.mjs";
-import {
-  answerRequest,
-  streamEvents,
-  validateQuestion,
-  FREE_MODELS,
-} from "./ai.mjs";
+import { providerCommand, connectedProvider } from "./provider-store.mjs";
+import { providerRequest, providerEvents } from "./providers.mjs";
+import { answerRequest, validateQuestion, FREE_MODELS } from "./ai.mjs";
 
 initializeApp();
 const key = defineSecret("OPENROUTER_KEY");
+const encryptionKey = defineSecret("PROVIDER_ENCRYPTION_KEY");
 const db = getFirestore();
 const hash = (text) => createHash("sha256").update(text).digest("hex");
-const limit = async (uid, ip, kind) => {
+const quota = async (ids, caps) => {
   const now = Date.now();
-  const minute = Math.floor(now / 60000);
-  const day = Math.floor(now / 86400000);
-  const caps = kind === "ask" ? [6, 30, 1000] : [10, 100, 5000];
-  const ids = [
-    `${kind}-user-${hash(uid)}-${minute}`,
-    `${kind}-ip-${hash(ip)}-${day}`,
-    `${kind}-all-${day}`,
-  ];
   await db.runTransaction(async (transaction) => {
     const refs = ids.map((id) => db.collection("quotas").doc(id));
     const snapshots = await transaction.getAll(...refs);
@@ -50,13 +40,31 @@ const limit = async (uid, ip, kind) => {
     );
   });
 };
+const limit = async (uid, ip, kind) => {
+  const now = Date.now();
+  const minute = Math.floor(now / 60000);
+  const day = Math.floor(now / 86400000);
+  const caps = kind === "ask" ? [6, 30, 1000] : [10, 100, 5000];
+  await quota(
+    [
+      `${kind}-user-${hash(uid)}-${minute}`,
+      `${kind}-ip-${hash(ip)}-${day}`,
+      `${kind}-all-${day}`,
+    ],
+    caps,
+  );
+};
+const limitPersonal = async (uid) => {
+  const minute = Math.floor(Date.now() / 60000);
+  await quota([`personal-ask-user-${hash(uid)}-${minute}`], [6]);
+};
 export const api = onRequest(
   {
     region: "us-central1",
     timeoutSeconds: 300,
     memory: "512MiB",
     maxInstances: 3,
-    secrets: [key],
+    secrets: [key, encryptionKey],
     cors: [
       "https://caption-purple.web.app",
       "https://caption-purple.firebaseapp.com",
@@ -99,6 +107,29 @@ export const api = onRequest(
         return;
       }
       const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (req.path.endsWith("/providers")) {
+        if (identity.firebase?.sign_in_provider !== "google.com") {
+          res.status(403).json({
+            error: "Continue with Google to save a provider connection.",
+          });
+          return;
+        }
+        if (!req.body || typeof req.body.command !== "string") {
+          res.status(400).json({ error: "Unknown provider action." });
+          return;
+        }
+        if (["list", "connect"].includes(req.body.command))
+          await limit(identity.uid, ip, "import");
+        res.json(
+          await providerCommand(
+            identity.uid,
+            req.body,
+            encryptionKey.value(),
+            signal,
+          ),
+        );
+        return;
+      }
       if (req.path.endsWith("/import")) {
         if (typeof req.body?.url !== "string" || req.body.url.length > 2048) {
           res.status(400).json({ error: "Enter a valid web link." });
@@ -129,8 +160,31 @@ export const api = onRequest(
         res.status(400).json({ error: error.message });
         return;
       }
-      await limit(identity.uid, ip, "ask");
-      const response = await answerRequest(body, key.value(), signal);
+      let response;
+      let format = "chat";
+      if (body.connectionId !== undefined) {
+        if (identity.firebase?.sign_in_provider !== "google.com") {
+          res
+            .status(403)
+            .json({ error: "Sign in to use this provider connection." });
+          return;
+        }
+        await limitPersonal(identity.uid);
+        const provider = await connectedProvider(
+          identity.uid,
+          body.connectionId,
+          encryptionKey.value(),
+        );
+        ({ response, format } = await providerRequest(
+          body,
+          provider.connection,
+          provider.key,
+          signal,
+        ));
+      } else {
+        await limit(identity.uid, ip, "ask");
+        response = await answerRequest(body, key.value(), signal);
+      }
       res.set("Content-Type", "text/event-stream; charset=utf-8");
       res.set("X-Accel-Buffering", "no");
       res.flushHeaders();
@@ -172,7 +226,7 @@ export const api = onRequest(
       };
       const heartbeat = setInterval(() => res.write(": keepalive\n\n"), 15000);
       try {
-        for await (const event of streamEvents(response.body)) {
+        for await (const event of providerEvents(response.body, format)) {
           if (event.error)
             throw new Error("The model stopped before finishing. Try again.");
           if (event.model) actualModel = event.model;

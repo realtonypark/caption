@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { User } from "firebase/auth";
 import { googleSignIn, googleSignOut } from "../services/firebase";
+import { Link } from "./Link";
 
 export const AccountMenu = ({
   user,
@@ -45,6 +46,13 @@ export const AccountMenu = ({
         <div className="account-popover">
           <p>{user?.email || "Keep your library and notes on every device."}</p>
           <small>{status}</small>
+          <Link
+            href="/models"
+            className="paper-button"
+            onClick={() => setOpen(false)}
+          >
+            Models &amp; providers
+          </Link>
           <button
             type="button"
             className="paper-button"

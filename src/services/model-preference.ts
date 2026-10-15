@@ -3,7 +3,8 @@ const KEY = "caption:reading-model";
 export const preferredModel = () => {
   try {
     const saved = localStorage.getItem(KEY);
-    return FREE_MODELS.some((model) => model.id === saved)
+    return FREE_MODELS.some((model) => model.id === saved) ||
+      (saved && /^[a-zA-Z0-9-]{1,80}::[^\s]{1,200}$/.test(saved))
       ? saved!
       : FREE_MODELS[0].id;
   } catch {

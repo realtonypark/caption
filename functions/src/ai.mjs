@@ -68,7 +68,7 @@ export const readingMessages = (body) => {
   ];
 };
 
-export async function* streamEvents(stream) {
+export async function* streamEvents(stream, { requireTerminator = true } = {}) {
   const decoder = new TextDecoder();
   let buffer = "";
   let done = false;
@@ -94,7 +94,8 @@ export async function* streamEvents(stream) {
     if (data === "[DONE]") return;
     if (data) yield JSON.parse(data);
   }
-  if (!done) throw new Error("The model stopped before finishing. Try again.");
+  if (requireTerminator && !done)
+    throw new Error("The model stopped before finishing. Try again.");
 }
 
 export const answerRequest = async (body, key, signal, request = fetch) => {

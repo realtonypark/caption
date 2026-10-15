@@ -151,4 +151,11 @@ test("rejects a stream that closes without the done terminator", async () => {
   ))
     events.push(event);
   assert.deepEqual(events, [{ ok: true }]);
+  const unterminated = [];
+  for await (const event of streamEvents(
+    new Response('data: {"ok":true}\n\n').body,
+    { requireTerminator: false },
+  ))
+    unterminated.push(event);
+  assert.deepEqual(unterminated, [{ ok: true }]);
 });
