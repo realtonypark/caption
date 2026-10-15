@@ -2080,8 +2080,8 @@ ul {
 }
 .remove-book {
   position: absolute;
-  right: -40px;
-  top: 55%;
+  right: 0;
+  bottom: 14px;
   width: 32px;
   height: 32px;
   display: grid;
@@ -2102,8 +2102,9 @@ ul {
 }
 @media (max-width: 719px) {
   .remove-book {
-    right: -18px;
-    top: 18px;
+    right: 0;
+    bottom: 12px;
+    top: auto;
     width: 25px;
     height: 25px;
   }

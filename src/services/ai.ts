@@ -39,7 +39,7 @@ export const requestAnswer = async (
       action,
       scope,
       model,
-      history: history.flatMap((e) => [
+      history: history.slice(-20).flatMap((e) => [
         { role: "user", content: e.question },
         { role: "assistant", content: e.answer },
       ]),

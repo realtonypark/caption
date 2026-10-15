@@ -16,7 +16,7 @@ interface MarginProps {
   onActive: (id?: string) => void;
   onNote: (insight: Insight) => void;
   onHover: (id?: string) => void;
-  onAsk: (thread: AnswerThread, question: string) => void;
+  onAsk: (thread: AnswerThread, question: string) => Promise<boolean>;
   onDelete: (thread: AnswerThread) => void;
   onRetry: (thread: AnswerThread) => void;
   onParagraph: (index: number) => void;

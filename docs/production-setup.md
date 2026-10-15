@@ -2,7 +2,7 @@
 
 Project: `caption-purple`. Region: `us-central1`. The Firebase CLI account is `realtonypark@gmail.com`.
 
-Install dependencies with `npm ci` and `npm ci --prefix functions`. Run `npm run build`, `npm run lint`, `npm test`, and `npm run test:backend`.
+Install dependencies with `npm ci` and `npm ci --prefix functions`, and install the Firebase CLI with `npm install -g firebase-tools`. Run `npm run build`, `npm run lint`, `npm test`, and `npm run test:backend`.
 
 Start local services with `firebase emulators:start --only auth,firestore,functions --project caption-purple`. Store an owner OpenRouter key in ignored `functions/.secret.local` as `OPENROUTER_KEY=…`, then run `VITE_FIREBASE_EMULATORS=true npm run dev`. Run `npm run test:rules` against the running Firestore emulator. Never use the emulator flag in a production build.
 

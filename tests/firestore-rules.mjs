@@ -36,6 +36,18 @@ try {
   };
   await assertSucceeds(setDoc(doc(owner, "users/owner/readings/source"), data));
   await assertSucceeds(getDoc(doc(owner, "users/owner/readings/source")));
+  await assertFails(
+    setDoc(doc(owner, "users/owner/insights/broken"), {
+      updatedAt: Timestamp.now(),
+      deleted: false,
+    }),
+  );
+  await assertFails(
+    setDoc(doc(owner, "users/owner/insights/broken"), {
+      ...data,
+      value: "not-a-map",
+    }),
+  );
   await assertFails(getDoc(doc(stranger, "users/owner/readings/source")));
   await assertFails(setDoc(doc(guest, "users/guest/readings/source"), data));
   await assertFails(getDoc(doc(owner, "providers/secret")));

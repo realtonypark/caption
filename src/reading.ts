@@ -122,24 +122,29 @@ export const stampLibrary = (
   const stamp = <T extends { id: string; updatedAt?: number }>(
     old: T[],
     values: T[],
-  ) =>
-    values.map((value) =>
-      old.find((item) => item.id === value.id) === value
-        ? value
-        : { ...value, updatedAt: now },
-    );
+  ) => {
+    const previous = new Map(old.map((item) => [item.id, item]));
+    return values.map((value) => {
+      const prior = previous.get(value.id);
+      if (prior === value) return value;
+      return { ...value, updatedAt: Math.max(now, (prior?.updatedAt ?? 0) + 1) };
+    });
+  };
   const removed = (
     old: { id: string }[],
     values: { id: string }[],
     tombstones: Record<string, number> = {},
-  ) => ({
-    ...tombstones,
-    ...Object.fromEntries(
-      old
-        .filter((item) => !values.some((value) => value.id === item.id))
-        .map((item) => [item.id, now]),
-    ),
-  });
+  ) => {
+    const kept = new Set(values.map((value) => value.id));
+    return {
+      ...tombstones,
+      ...Object.fromEntries(
+        old
+          .filter((item) => !kept.has(item.id))
+          .map((item) => [item.id, now]),
+      ),
+    };
+  };
   return {
     ...next,
     readings: stamp(before.readings, next.readings),
@@ -597,9 +602,19 @@ export const notepadMarkdown = (state: LibraryState): string =>
         `### ${passageLabel(insight.passage)}`,
         `> ${insight.passage.quote.replace(/\n/g, "\n> ")}`,
         insight.note ? `Note: ${insight.note}` : "",
-        ...insight.exchanges.map(
-          (exchange) =>
-            `Question: ${exchange.question}\n\n${exchange.answer}${exchange.model ? `\n\nModel: ${exchange.model}` : ""}`,
+        ...insight.exchanges.map((exchange) =>
+          [
+            `Question: ${exchange.question}\n\n${exchange.answer}`,
+            exchange.paragraphs.length
+              ? `Citations: ${exchange.paragraphs.map((number) => `¶${number}`).join(", ")}`
+              : "",
+            ...(exchange.sources ?? []).map(
+              (source) => `- [${source.title || source.url}](${source.url})`,
+            ),
+            exchange.model ? `Model: ${exchange.model}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n\n"),
         ),
       ]),
     ]),
