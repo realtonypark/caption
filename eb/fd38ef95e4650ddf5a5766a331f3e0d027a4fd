@@ -1,0 +1,16 @@
+src/components/Book.tsx
+  h_05e5164a29872e 29
+src/index.css
+  h_05e5164a29872e 340-351,972,1176,1245,1384
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ebfd38ef95e4650ddf5a5766a331f3e0d027a4fd",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
