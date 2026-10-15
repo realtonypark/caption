@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { Library } from "./components/Library";
 import { Link } from "./components/Link";
@@ -27,6 +27,8 @@ const PageLoading = () => (
     <p>Opening your page…</p>
   </main>
 );
+const EXAMPLE_URL = "https://tonypark.dev/2026/09/29/muse/";
+const EXAMPLE_ID = "default-muse-reading";
 
 export const App = () => {
   const {
@@ -42,6 +44,8 @@ export const App = () => {
     useState<readonly { id: string; name: string }[]>(FREE_MODELS);
   const [modelOwner, setModelOwner] = useState<string>();
   const [modelError, setModelError] = useState("");
+  const latestLibrary = useRef({ state, updateLibrary });
+  const exampleAttempted = useRef(false);
   const route = useRoute();
   const pathname = route.split("?")[0];
   const current =
@@ -58,6 +62,45 @@ export const App = () => {
   const insightId = new URLSearchParams(route.split("?")[1]).get("insight");
   const insights = reading ? readingInsights(state, reading.id) : [];
   const initialInsight = insights.find((entry) => entry.id === insightId);
+  useEffect(() => {
+    latestLibrary.current = { state, updateLibrary };
+  });
+  useEffect(() => {
+    if (loading || current !== "library" || exampleAttempted.current) return;
+    const existing = latestLibrary.current.state;
+    if (
+      existing.deletedReadings?.[EXAMPLE_ID] ||
+      existing.readings.some(
+        (item) => item.id === EXAMPLE_ID || item.location === EXAMPLE_URL,
+      )
+    ) {
+      exampleAttempted.current = true;
+      return;
+    }
+    exampleAttempted.current = true;
+    setProgress("Adding the example reading…");
+    void importLink(EXAMPLE_URL, setProgress)
+      .then((reading) => {
+        latestLibrary.current.updateLibrary((previous) =>
+          previous.deletedReadings?.[EXAMPLE_ID] ||
+          previous.readings.some(
+            (item) => item.id === EXAMPLE_ID || item.location === EXAMPLE_URL,
+          )
+            ? previous
+            : {
+                ...previous,
+                readings: [...previous.readings, { ...reading, id: EXAMPLE_ID }],
+              },
+        );
+        setProgress("");
+      })
+      .catch((error: unknown) => {
+        exampleAttempted.current = false;
+        setProgress(
+          `Could not add the example reading: ${error instanceof Error ? error.message : "The source could not be imported."}`,
+        );
+      });
+  }, [loading, current]);
   useEffect(() => {
     let alive = true;
     if (user && current !== "models")
