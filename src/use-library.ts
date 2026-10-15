@@ -15,6 +15,7 @@ export const useLibrary = () => {
   const [restored] = useState(readLibrary);
   const [state, setState] = useState(restored.state);
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState(restored.warning);
   const [status, setStatus] = useState("Saved on this device");
   const current = useRef(state);
@@ -81,6 +82,7 @@ export const useLibrary = () => {
       identity = id;
       const run = ++generation;
       stopCloud?.();
+      setLoading(true);
       ready.current = false;
       setUser(account?.isAnonymous ? null : account);
       const wasGuest = owner.current === "guest";
@@ -118,6 +120,7 @@ export const useLibrary = () => {
         );
         if (id === "guest") {
           setStatus("Saved on this device");
+          setLoading(false);
           return;
         }
         setStatus("Connecting…");
@@ -130,10 +133,12 @@ export const useLibrary = () => {
             current.current = merged;
             setState(merged);
             ready.current = true;
+            setLoading(false);
             persist(merged);
           },
           (error) => {
             if (run === generation) {
+              setLoading(false);
               setWarning(
                 `Cloud library unavailable: ${error.message}. Your device copy is kept.`,
               );
@@ -142,11 +147,14 @@ export const useLibrary = () => {
           },
         );
       } catch (error) {
-        setWarning(
-          error instanceof Error
-            ? error.message
-            : "Could not open device storage.",
-        );
+        if (run === generation) {
+          setLoading(false);
+          setWarning(
+            error instanceof Error
+              ? error.message
+              : "Could not open device storage.",
+          );
+        }
       }
     });
     return () => {
@@ -155,5 +163,5 @@ export const useLibrary = () => {
       stopCloud?.();
     };
   }, [restored.state]);
-  return { state, update, user, warning, status };
+  return { state, update, user, warning, status, loading };
 };

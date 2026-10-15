@@ -12,7 +12,14 @@ import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 
 export const App = () => {
-  const { state, update: updateLibrary, user, warning, status } = useLibrary();
+  const {
+    state,
+    update: updateLibrary,
+    user,
+    warning,
+    status,
+    loading,
+  } = useLibrary();
   const [progress, setProgress] = useState("");
   const route = useRoute();
   const pathname = route.split("?")[0];
@@ -86,6 +93,10 @@ export const App = () => {
         />
       ) : current === "notepad" ? (
         <Notepad state={state} />
+      ) : current === "reading" && loading ? (
+        <main id="main" className="page-placeholder" role="status">
+          <p>Opening your reading…</p>
+        </main>
       ) : reading ? (
         <Reader
           key={`${reading.id}:${insightId ?? ""}`}
