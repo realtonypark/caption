@@ -69,7 +69,7 @@ export const apiRequest = async (
   const user = await session();
   const base =
     import.meta.env.VITE_FIREBASE_EMULATORS === "true"
-      ? "http://127.0.0.1:5001/caption-ai-tpark/us-central1/api"
+      ? "http://127.0.0.1:5001/caption-purple/us-central1/api"
       : "";
   const response = await fetch(`${base}/api/${path}`, {
     method: "POST",

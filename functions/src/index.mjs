@@ -58,8 +58,8 @@ export const api = onRequest(
     maxInstances: 3,
     secrets: [key],
     cors: [
-      "https://caption-ai-tpark.web.app",
-      "https://caption-ai-tpark.firebaseapp.com",
+      "https://caption-purple.web.app",
+      "https://caption-purple.firebaseapp.com",
       /^http:\/\/(localhost|127\.0\.0\.1):\d+$/,
     ],
   },
