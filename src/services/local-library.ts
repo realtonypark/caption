@@ -1,4 +1,4 @@
-import type { LibraryState } from "../reading";
+import { mergeLibraries, type LibraryState } from "../reading";
 const open = () =>
   new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open("caption-library", 1);
@@ -18,10 +18,19 @@ export const localLibrary = async (
         "libraries",
         state ? "readwrite" : "readonly",
       );
-      const request = state
-        ? transaction.objectStore("libraries").put(state, owner)
-        : transaction.objectStore("libraries").get(owner);
-      transaction.oncomplete = () => resolve(state ?? request.result);
+      const store = transaction.objectStore("libraries");
+      const request = store.get(owner);
+      let value: LibraryState | undefined;
+      request.onsuccess = () => {
+        value = state
+          ? mergeLibraries(
+              state,
+              request.result ?? { readings: [], insights: [] },
+            )
+          : request.result;
+        if (state) store.put(value, owner);
+      };
+      transaction.oncomplete = () => resolve(value);
       transaction.onerror = () => reject(transaction.error);
       transaction.onabort = () => reject(transaction.error);
     });
