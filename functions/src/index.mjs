@@ -114,7 +114,11 @@ export const api = onRequest(
           });
           return;
         }
-        if (["list", "connect"].includes(req.body?.command))
+        if (!req.body || typeof req.body.command !== "string") {
+          res.status(400).json({ error: "Unknown provider action." });
+          return;
+        }
+        if (["list", "connect"].includes(req.body.command))
           await limit(identity.uid, ip, "import");
         res.json(
           await providerCommand(
