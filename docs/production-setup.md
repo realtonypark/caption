@@ -8,7 +8,7 @@ Start local services with `firebase emulators:start --only auth,firestore,functi
 
 For deployment, link an approved billing account to enable Blaze, then store the key with `firebase functions:secrets:set OPENROUTER_KEY --project caption-purple`. Build without emulator environment variables and deploy with `firebase deploy --project caption-purple`. The frontend Firebase configuration is public project metadata; provider credentials are server secrets.
 
-Google sign-in and anonymous sessions are enabled. Guests read without a sign-up screen. Only Google accounts sync libraries. The authenticated API verifies Firebase tokens and limits shared usage. Firestore rules deny access to all server-only data. Set a Firestore TTL on `quotas.expiresAt` after billing is enabled to expire quota records.
+Google sign-in and anonymous sessions are enabled. Guests read without a sign-up screen. Only Google accounts sync libraries. The authenticated API verifies Firebase tokens and limits shared usage. Firestore rules deny access to all server-only data. The `quotas.expiresAt` TTL is active; quota records expire after 48 hours.
 
 Personal API connections also require `PROVIDER_ENCRYPTION_KEY`, a base64-encoded 32-byte random key, in Firebase Secret Manager. Configure it with `firebase functions:secrets:set PROVIDER_ENCRYPTION_KEY --project caption-purple`. Keep it stable while encrypted connections exist. Rotate it only with a migration that decrypts existing records with the previous key and encrypts them with the new key. Never put the key in a frontend environment variable.
 
