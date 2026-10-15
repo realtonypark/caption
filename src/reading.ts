@@ -130,10 +130,9 @@ export const stampLibrary = (
       const prior = previous.get(value.id);
       if (prior === value) return value;
       const addedAt = stampAddedAt
-        ? (prior?.addedAt ??
-          value.addedAt ??
-          prior?.updatedAt ??
-          (prior ? undefined : now))
+        ? prior
+          ? (prior.addedAt ?? prior.updatedAt ?? 0)
+          : (value.addedAt ?? now)
         : undefined;
       return {
         ...value,

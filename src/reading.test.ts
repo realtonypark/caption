@@ -81,6 +81,29 @@ it("puts new readings first without changing their position when edited", () => 
   ).toBe(added.id);
 });
 
+it("keeps a legacy reading in place when it is edited", () => {
+  const initial = emptyLibrary();
+  const older = { ...SAMPLE_READINGS[0], id: "older", updatedAt: 500 };
+  const legacy = { ...SAMPLE_READINGS[1], id: "legacy" };
+  const before = { ...initial, readings: [older, legacy] };
+  const edited = stampLibrary(
+    before,
+    {
+      ...before,
+      readings: before.readings.map((reading) =>
+        reading.id === legacy.id ? { ...reading, title: "Edited title" } : reading,
+      ),
+    },
+    1_000,
+  );
+
+  expect(edited.readings.find(({ id }) => id === legacy.id)?.addedAt).toBe(0);
+  expect(orderReadingsByAddedAt(edited.readings).map(({ id }) => id)).toEqual([
+    older.id,
+    legacy.id,
+  ]);
+});
+
 describe("a saved reading insight", () => {
   it("keeps highlight, note, and AI exchange together without crossing source boundaries", () => {
     const initial = emptyLibrary();

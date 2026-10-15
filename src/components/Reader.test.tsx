@@ -249,10 +249,19 @@ it("starts a question by typing and keeps follow-ups in their own answer thread"
   ).toBeInTheDocument();
 });
 
-it("saves notes on Enter and outside click, and cancels Escape edits", () => {
+it("highlights without a note, saves notes, and cancels Escape edits", () => {
   render(<ReaderDemo />);
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
-  expect(screen.queryByRole("button", { name: "Highlight" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Highlight" }));
+  const highlighted = screen.getByRole("button", {
+    name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
+  });
+  expect(highlighted).toHaveAttribute("data-color", "yellow");
+  expect(
+    screen.queryByRole("textbox", { name: "Your note on the selected passage" }),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
   fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
   const note = screen.getByRole("textbox", {
     name: "Your note on the selected passage",

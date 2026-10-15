@@ -322,15 +322,29 @@ export const SelectionLens = ({
                 </button>
               </>
             ) : (
-              <button
-                className="lens-button icon-button"
-                type="button"
-                aria-label="Add a note"
-                title="Add a note"
-                onClick={toNote}
-              >
-                <Icon name="pen" />
-              </button>
+              <>
+                <button
+                  className="lens-button icon-button"
+                  type="button"
+                  aria-label="Highlight"
+                  title="Highlight"
+                  onClick={() => {
+                    onSave({ highlighted: true });
+                    close();
+                  }}
+                >
+                  <Icon name="highlight" />
+                </button>
+                <button
+                  className="lens-button icon-button"
+                  type="button"
+                  aria-label="Add a note"
+                  title="Add a note"
+                  onClick={toNote}
+                >
+                  <Icon name="pen" />
+                </button>
+              </>
             )}
           </div>
         ) : mode === "note" ? (
