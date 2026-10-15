@@ -2080,8 +2080,8 @@ ul {
 }
 .remove-book {
   position: absolute;
-  right: -40px;
-  top: 55%;
+  right: 0;
+  bottom: 14px;
   width: 32px;
   height: 32px;
   display: grid;
@@ -2102,8 +2102,9 @@ ul {
 }
 @media (max-width: 719px) {
   .remove-book {
-    right: -18px;
-    top: 18px;
+    right: 0;
+    bottom: 12px;
+    top: auto;
     width: 25px;
     height: 25px;
   }
@@ -2137,7 +2138,7 @@ ul {
 }
 .models-page p {
   line-height: 1.6;
-  color: #777367;
+  color: #6b6654;
 }
 .provider-card {
   border: 1px solid #d8d4c7;
@@ -2167,7 +2168,7 @@ ul {
 .provider-row small {
   display: block;
   font-size: 12px;
-  color: #888174;
+  color: #6b655a;
   margin-top: 3px;
 }
 .provider-available {
@@ -2203,7 +2204,7 @@ ul {
   padding: 20px;
   width: 100%;
   text-align: left;
-  color: #777367;
+  color: #6b6654;
   font-size: 14px;
 }
 .connect-provider:hover {
@@ -2217,7 +2218,7 @@ ul {
 .models-page label {
   font-size: 12px;
   display: block;
-  color: #777367;
+  color: #6b6654;
 }
 .models-page input,
 .models-page select {
@@ -2236,7 +2237,7 @@ ul {
 .provider-picker > small {
   display: block;
   margin: 16px 8px 5px;
-  color: #968c7c;
+  color: #6b655a;
 }
 .provider-picker > button,
 .model-list button {
@@ -2255,7 +2256,7 @@ ul {
 }
 .provider-picker button span {
   font-size: 12px;
-  color: #968c7c;
+  color: #6b655a;
 }
 .model-list {
   max-height: 300px;
@@ -2297,7 +2298,7 @@ ul {
 .provider-cancel {
   margin-left: 18px;
   font-size: 13px;
-  color: #777367;
+  color: #6b6654;
 }
 .account-popover > .paper-button {
   display: block;

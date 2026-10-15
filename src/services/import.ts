@@ -2,11 +2,29 @@ import type { Reading, Paragraph } from "../reading";
 import { BOOK_DESIGN_COUNT } from "../reading";
 import { apiRequest } from "./firebase";
 
-const completeReading = (source: Omit<Reading, "id" | "design">): Reading => ({
-  ...source,
-  id: crypto.randomUUID(),
-  design: Math.floor(Math.random() * BOOK_DESIGN_COUNT),
-});
+const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
+  const characters = source.paragraphs.reduce(
+    (total, paragraph) =>
+      total + paragraph.text.length + (paragraph.heading?.length ?? 0),
+    0,
+  );
+  if (source.paragraphs.length > 10000 || characters > 600000)
+    throw new Error(
+      "This source is too large to use with AI. Try a shorter article or fewer pages.",
+    );
+  return {
+    ...source,
+    title: source.title.slice(0, 500),
+    paragraphs: source.paragraphs.map((paragraph) => ({
+      ...paragraph,
+      ...(paragraph.heading
+        ? { heading: paragraph.heading.slice(0, 2000) }
+        : {}),
+    })),
+    id: crypto.randomUUID(),
+    design: Math.floor(Math.random() * BOOK_DESIGN_COUNT),
+  };
+};
 export const importLink = async (
   url: string,
   progress: (message: string) => void,

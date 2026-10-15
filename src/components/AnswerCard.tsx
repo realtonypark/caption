@@ -19,7 +19,7 @@ export const AnswerCard = ({
   active: boolean;
   onActivate: () => void;
   onCollapse?: () => void;
-  onAsk: (question: string) => void;
+  onAsk: (question: string) => Promise<boolean>;
   onDelete: () => void;
   onRetry: () => void;
   onParagraph: (index: number) => void;
@@ -168,8 +168,10 @@ export const AnswerCard = ({
         onSubmit={(event) => {
           event.preventDefault();
           if (draft.trim()) {
-            onAsk(draft.trim());
-            setDraft("");
+            const submitted = draft.trim();
+            void onAsk(submitted).then((accepted) => {
+              if (accepted) setDraft("");
+            });
           }
         }}
       >

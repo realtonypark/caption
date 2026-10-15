@@ -45,7 +45,7 @@ export const requestAnswer = async (
             model: model.split("::").slice(1).join("::"),
           }
         : {}),
-      history: history.flatMap((e) => [
+      history: history.slice(-20).flatMap((e) => [
         { role: "user", content: e.question },
         { role: "assistant", content: e.answer },
       ]),

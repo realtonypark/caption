@@ -9,7 +9,8 @@ if (!process.env.FIRESTORE_EMULATOR_HOST)
 initializeApp({ projectId: "caption-purple" });
 const key = (
   await readFile(new URL("../.secret.local", import.meta.url), "utf8")
-).match(/^OPENROUTER_KEY=(.+)$/m)[1];
+).match(/^OPENROUTER_KEY=(.+)$/m)?.[1]?.trim();
+if (!key) throw new Error("Set OPENROUTER_KEY in functions/.secret.local.");
 const encryption = randomBytes(32).toString("base64");
 const owner = "provider-integration";
 const connected = await providerCommand(
@@ -25,7 +26,10 @@ try {
   const list = await providerCommand(owner, { command: "list" }, encryption);
   assert.equal(JSON.stringify(list).includes(key), false);
   const resolved = await connectedProvider(owner, connection.id, encryption);
-  assert.equal(resolved.key, key);
+  assert.ok(
+    resolved.key === key,
+    "Decrypted key does not match the stored key.",
+  );
   await assert.rejects(
     connectedProvider("another-account", connection.id, encryption),
     /Reconnect/,

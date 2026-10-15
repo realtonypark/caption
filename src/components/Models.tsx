@@ -11,13 +11,25 @@ import { preferredModel, keepModel } from "../services/model-preference";
 import { ProviderDialog } from "./ProviderDialog";
 import { googleSignIn } from "../services/firebase";
 
-export const Models = ({ user }: { user: User | null }) => {
+export interface ProviderEditing {
+  provider: string;
+  id?: string;
+}
+
+export const Models = ({
+  user,
+  editing,
+  onEditing,
+}: {
+  user: User | null;
+  editing?: ProviderEditing;
+  onEditing: (editing?: ProviderEditing) => void;
+}) => {
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [picker, setPicker] = useState(false);
   const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState<{ provider: string; id?: string }>();
   const [key, setKey] = useState("");
   const [menu, setMenu] = useState<string>();
   const [modelsFor, setModelsFor] = useState<string>();
@@ -66,7 +78,7 @@ export const Models = ({ user }: { user: User | null }) => {
         data.connection!,
       ]);
     setKey("");
-    setEditing(undefined);
+    onEditing(undefined);
   };
   const toggle = async (connection: ProviderConnection, id: string) => {
     const enabled = connection.enabled.includes(id)
@@ -147,11 +159,12 @@ export const Models = ({ user }: { user: User | null }) => {
                   <button
                     type="button"
                     onClick={() => {
-                      setEditing({
+                      onEditing({
                         provider: connection.provider,
                         id: connection.id,
                       });
                       setMenu(undefined);
+                      setError("");
                     }}
                   >
                     Edit key
@@ -198,7 +211,11 @@ export const Models = ({ user }: { user: User | null }) => {
                           type="button"
                           key={model.id}
                           aria-pressed={connection.enabled.includes(model.id)}
-                          disabled={busy}
+                          disabled={
+                            busy ||
+                            (connection.enabled.length === 1 &&
+                              connection.enabled.includes(model.id))
+                          }
                           onClick={() =>
                             void run(() => toggle(connection, model.id))
                           }
@@ -245,9 +262,10 @@ export const Models = ({ user }: { user: User | null }) => {
                   type="button"
                   key={provider.id}
                   onClick={() => {
-                    setEditing({ provider: provider.id });
+                    onEditing({ provider: provider.id });
                     setPicker(false);
                     setKey("");
+                    setError("");
                   }}
                 >
                   {provider.name}
@@ -337,7 +355,7 @@ export const Models = ({ user }: { user: User | null }) => {
         <ProviderDialog
           busy={busy}
           onClose={() => {
-            setEditing(undefined);
+            onEditing(undefined);
             setKey("");
           }}
         >
@@ -406,7 +424,7 @@ export const Models = ({ user }: { user: User | null }) => {
             className="provider-cancel"
             disabled={busy}
             onClick={() => {
-              setEditing(undefined);
+              onEditing(undefined);
               setKey("");
             }}
           >

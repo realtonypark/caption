@@ -3,12 +3,77 @@ import {
   doc,
   getDocs,
   onSnapshot,
-  writeBatch,
+  runTransaction,
   Timestamp,
   type QuerySnapshot,
 } from "firebase/firestore";
 import { database } from "./firebase";
 import { type LibraryState, type Reading, type Insight } from "../reading";
+
+type StoredParagraph = Reading["paragraphs"][number] & {
+  continuation?: boolean;
+};
+
+const CHUNK_BUDGET = 500000;
+
+const splitParagraph = (
+  paragraph: Reading["paragraphs"][number],
+): StoredParagraph[] => {
+  const encoder = new TextEncoder();
+  if (encoder.encode(JSON.stringify(paragraph)).length <= CHUNK_BUDGET)
+    return [paragraph];
+  const { text, ...rest } = paragraph;
+  if (!text) return [paragraph];
+  const budget =
+    CHUNK_BUDGET -
+    encoder.encode(JSON.stringify({ ...rest, text: "" })).length -
+    64;
+  const pieces: StoredParagraph[] = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = Math.min(text.length, start + budget);
+    while (
+      end > start + 1 &&
+      encoder.encode(text.slice(start, end)).length > budget
+    )
+      end = start + Math.floor((end - start) / 2);
+    const slice = text.slice(start, end);
+    pieces.push(
+      pieces.length
+        ? { text: slice, explanation: "", continuation: true }
+        : { ...rest, text: slice },
+    );
+    start = end;
+  }
+  return pieces;
+};
+
+const sameEntry = (a: unknown, b: unknown): boolean => {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+  if (Array.isArray(a) || Array.isArray(b))
+    return (
+      Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((item, index) => sameEntry(item, b[index]))
+    );
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length &&
+    keys.every((key) =>
+      sameEntry(
+        (a as Record<string, unknown>)[key],
+        (b as Record<string, unknown>)[key],
+      ),
+    )
+  );
+};
+
+const storedTime = (data: Record<string, unknown> | undefined): number => {
+  const updatedAt = data?.updatedAt;
+  return updatedAt instanceof Timestamp ? updatedAt.toMillis() : -1;
+};
 
 export const watchLibrary = (
   uid: string,
@@ -50,12 +115,18 @@ export const watchLibrary = (
           const chunks = await getDocs(
             collection(database, `users/${uid}/readings/${item.id}/chunks`),
           );
-          value.paragraphs = chunks.docs
+          const stored = chunks.docs
             .filter(
               (chunk) => Number(chunk.id) < (value.chunkCount ?? chunks.size),
             )
             .sort((a, b) => Number(a.id) - Number(b.id))
-            .flatMap((d) => d.data().paragraphs);
+            .flatMap((d) => d.data().paragraphs as StoredParagraph[]);
+          value.paragraphs = [];
+          for (const paragraph of stored) {
+            const last = value.paragraphs.at(-1);
+            if (paragraph.continuation && last) last.text += paragraph.text;
+            else value.paragraphs.push(paragraph);
+          }
         }
         state.readings.push(value);
       }
@@ -104,56 +175,69 @@ export const saveCloudLibrary = async (
   before: LibraryState,
   next: LibraryState,
 ) => {
-  let batch = writeBatch(database);
-  let count = 0;
-  const set = async (path: string, value: Record<string, unknown>) => {
-    batch.set(doc(database, path), value);
-    count++;
-    if (count >= 400) {
-      await batch.commit();
-      batch = writeBatch(database);
-      count = 0;
-    }
-  };
   for (const kind of ["readings", "insights"] as const) {
     for (const value of next[kind]) {
       const old = before[kind].find((v) => v.id === value.id);
-      if (old && (old.updatedAt ?? 0) === (value.updatedAt ?? 0)) continue;
-      const path = `users/${uid}/${kind}/${value.id}`;
-      const updatedAt = Timestamp.fromMillis(value.updatedAt ?? 0);
       if (
+        old &&
+        (old.updatedAt ?? 0) === (value.updatedAt ?? 0) &&
+        sameEntry(old, value)
+      )
+        continue;
+      const path = `users/${uid}/${kind}/${value.id}`;
+      const time = value.updatedAt ?? 0;
+      const reading = value as Reading;
+      const chunked =
         kind === "readings" &&
-        new TextEncoder().encode(JSON.stringify(value)).length > 700000
-      ) {
-        const reading = value as Reading;
-        let paragraphs: Reading["paragraphs"] = [];
+        new TextEncoder().encode(JSON.stringify(value)).length > 700000;
+      const chunks: StoredParagraph[][] = [];
+      if (chunked) {
+        let paragraphs: StoredParagraph[] = [];
         let bytes = 0;
-        let index = 0;
-        for (const paragraph of reading.paragraphs) {
+        for (const paragraph of reading.paragraphs.flatMap(splitParagraph)) {
           const size = new TextEncoder().encode(
             JSON.stringify(paragraph),
           ).length;
-          if (bytes + size > 500000 && paragraphs.length) {
-            await set(`${path}/chunks/${index++}`, { paragraphs });
+          if (bytes + size > CHUNK_BUDGET && paragraphs.length) {
+            chunks.push(paragraphs);
             paragraphs = [];
             bytes = 0;
           }
           paragraphs.push(paragraph);
           bytes += size;
         }
-        if (paragraphs.length)
-          await set(`${path}/chunks/${index}`, { paragraphs });
-        await set(path, {
-          value: {
-            ...reading,
-            paragraphs: [],
-            chunked: true,
-            chunkCount: index + 1,
-          },
-          updatedAt,
-          deleted: false,
-        });
-      } else await set(path, { value, updatedAt, deleted: false });
+        if (paragraphs.length) chunks.push(paragraphs);
+      }
+      const listing = chunked
+        ? await getDocs(collection(database, `${path}/chunks`))
+        : undefined;
+      await runTransaction(database, async (tx) => {
+        const ref = doc(database, path);
+        const stored = await tx.get(ref);
+        if (storedTime(stored.data()) >= time) return;
+        if (chunked) {
+          for (const chunk of listing?.docs ?? [])
+            if (Number(chunk.id) >= chunks.length) tx.delete(chunk.ref);
+          chunks.forEach((paragraphs, index) =>
+            tx.set(doc(database, `${path}/chunks/${index}`), { paragraphs }),
+          );
+          tx.set(ref, {
+            value: {
+              ...reading,
+              paragraphs: [],
+              chunked: true,
+              chunkCount: chunks.length,
+            },
+            updatedAt: Timestamp.fromMillis(time),
+            deleted: false,
+          });
+        } else
+          tx.set(ref, {
+            value,
+            updatedAt: Timestamp.fromMillis(time),
+            deleted: false,
+          });
+      });
     }
     const key = kind === "readings" ? "deletedReadings" : "deletedInsights";
     for (const [id, time] of Object.entries(next[key] ?? {})) {
@@ -162,12 +246,22 @@ export const saveCloudLibrary = async (
         next[kind].some((v) => v.id === id && (v.updatedAt ?? 0) > time)
       )
         continue;
-      await set(`users/${uid}/${kind}/${id}`, {
-        value: {},
-        updatedAt: Timestamp.fromMillis(time),
-        deleted: true,
+      const path = `users/${uid}/${kind}/${id}`;
+      const listing =
+        kind === "readings"
+          ? await getDocs(collection(database, `${path}/chunks`))
+          : undefined;
+      await runTransaction(database, async (tx) => {
+        const ref = doc(database, path);
+        const stored = await tx.get(ref);
+        if (storedTime(stored.data()) >= time) return;
+        for (const chunk of listing?.docs ?? []) tx.delete(chunk.ref);
+        tx.set(ref, {
+          value: {},
+          updatedAt: Timestamp.fromMillis(time),
+          deleted: true,
+        });
       });
     }
   }
-  if (count) await batch.commit();
 };

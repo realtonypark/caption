@@ -8,16 +8,19 @@ export const QuestionComposer = ({
   children,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
-  onAsk: (question: string) => void;
+  onAsk: (question: string) => Promise<boolean>;
   children: ReactNode;
 }) => {
   const [question, setQuestion] = useState("");
   const [focused, setFocused] = useState(false);
   const ask = (text: string) => {
     if (!text.trim()) return;
-    onAsk(text.trim());
-    setQuestion("");
-    inputRef.current?.blur();
+    void onAsk(text.trim()).then((accepted) => {
+      if (accepted) {
+        setQuestion("");
+        inputRef.current?.blur();
+      }
+    });
   };
   return (
     <div className="question-composer">

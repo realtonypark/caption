@@ -21,7 +21,7 @@ export const useLibrary = () => {
   const current = useRef(state);
   const owner = useRef("guest");
   const ready = useRef(false);
-  const cloud = useRef<LibraryState>({ readings: [], insights: [] });
+  const confirmed = useRef<LibraryState>({ readings: [], insights: [] });
   const queue = useRef(Promise.resolve());
   const persist = (next: LibraryState) => {
     const id = owner.current;
@@ -33,17 +33,16 @@ export const useLibrary = () => {
     );
     if (account && !account.isAnonymous && ready.current) {
       setStatus("Saving…");
-      const previous = cloud.current;
-      cloud.current = next;
       queue.current = queue.current
         .catch(() => {})
         .then(() =>
           owner.current === id
-            ? saveCloudLibrary(account.uid, previous, next)
+            ? saveCloudLibrary(account.uid, confirmed.current, next)
             : undefined,
         )
         .then(() => {
           if (owner.current === id) {
+            confirmed.current = mergeLibraries(confirmed.current, next);
             setStatus("Saved to your account");
             setWarning(undefined);
           }
@@ -54,7 +53,6 @@ export const useLibrary = () => {
             setWarning(
               `Cloud save failed: ${error.message}. Your work remains on this device.`,
             );
-            cloud.current = previous;
           }
         });
     }
@@ -88,7 +86,7 @@ export const useLibrary = () => {
       const wasGuest = owner.current === "guest";
       const guestState = wasGuest ? current.current : undefined;
       owner.current = id;
-      if (!wasGuest && id === "guest") {
+      if (!wasGuest) {
         current.current = initialLibrary();
         setState(current.current);
       }
@@ -102,7 +100,7 @@ export const useLibrary = () => {
         if (run !== generation) return;
         const local =
           saved ?? (id === "guest" ? restored.state : initialLibrary());
-        current.current =
+        const loaded =
           id !== "guest" && guestState
             ? mergeLibraries(
                 mergeLibraries(
@@ -112,6 +110,8 @@ export const useLibrary = () => {
                 local,
               )
             : local;
+        // Edits made while storage was loading stay in the in-flight state.
+        current.current = mergeLibraries(loaded, current.current);
         setState(current.current);
         void localLibrary(id, current.current).catch(() =>
           setWarning(
@@ -128,7 +128,7 @@ export const useLibrary = () => {
           id,
           (remote) => {
             if (run !== generation) return;
-            cloud.current = remote;
+            confirmed.current = remote;
             const merged = mergeLibraries(current.current, remote);
             current.current = merged;
             setState(merged);

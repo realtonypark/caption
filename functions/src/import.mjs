@@ -76,7 +76,9 @@ export const downloadSource = async (raw, signal) => {
           `That site returned ${response.status}. Try downloading its PDF or another public link.`,
         );
       }
-      const type = response.headers.get("content-type") ?? "";
+      const type = (
+        response.headers.get("content-type") ?? ""
+      ).toLowerCase();
       if (!/html|application\/pdf/.test(type)) {
         await response.body?.cancel();
         throw new Error("That link is not an article or PDF.");

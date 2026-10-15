@@ -48,7 +48,7 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "*.log", ".secret.local", ".env.local"]
+      "ignore": ["node_modules", ".git", "*.log", ".secret.local", ".env", ".env.*"]
     }
   ],
   "firestore": {
