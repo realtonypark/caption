@@ -1130,59 +1130,6 @@ ul {
   padding: 0;
   position: relative;
 }
-.lens-colors,
-.new-highlight-colors {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-inline: 8px;
-}
-.marker-dot {
-  flex-shrink: 0;
-  padding: 0;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--marker);
-  border: 0;
-  box-shadow: inset 0 0 0 1px #0000001f;
-}
-.marker-dot:hover {
-  transform: scale(1.18);
-}
-.marker-dot[aria-pressed="true"] {
-  box-shadow:
-    0 0 0 2px #1d1b18,
-    0 0 0 3.5px #f3efe6;
-}
-.current-marker {
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--marker);
-  right: 5px;
-  bottom: 4px;
-  box-shadow: 0 0 0 2px #1d1b18;
-}
-.highlight-picker {
-  display: flex;
-  align-items: center;
-}
-.new-highlight-colors {
-  width: 0;
-  padding: 0;
-  overflow: hidden;
-  height: 32px;
-  transition:
-    width 0.3s,
-    padding 0.3s;
-}
-.highlight-picker:hover .new-highlight-colors,
-.highlight-picker:focus-within .new-highlight-colors {
-  width: 94px;
-  padding-inline: 8px;
-}
 .lens-pointer {
   position: absolute;
   left: calc(var(--lens-arrow, 20px) - 5px);
@@ -1951,12 +1898,6 @@ ul {
   .paragraph-number {
     display: none;
   }
-}
-
-/* Touch selections expose the colors without requiring a hover. */
-.selection-lens[data-docked="true"] .new-highlight-colors {
-  width: 94px;
-  padding-inline: 8px;
 }
 
 .sheet-answer-navigation {

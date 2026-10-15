@@ -7,12 +7,10 @@ import {
 } from "react";
 import {
   isShortSelection,
-  MARKERS,
   passageLabel,
   READING_ACTIONS,
   type Insight,
   type InsightPatch,
-  type Marker,
   type Passage,
   type ReadingAction,
 } from "../reading";
@@ -48,8 +46,6 @@ export const SelectionLens = ({
   insight,
   title,
   initialMode = "actions",
-  marker,
-  onMarker,
   onSave,
   onAsk,
   onClose,
@@ -59,8 +55,6 @@ export const SelectionLens = ({
   insight?: Insight;
   title: string;
   initialMode?: Mode;
-  marker: Marker;
-  onMarker: (color: Marker) => void;
   onSave: (patch: InsightPatch) => void;
   onAsk: (action: ReadingAction, question?: string) => Promise<boolean>;
   onClose: () => void;
@@ -92,7 +86,6 @@ export const SelectionLens = ({
       onSave({
         note: draft.trim(),
         highlighted: true,
-        color: insight?.color ?? marker,
       });
   };
   const toAsk = (text = "") => {
@@ -106,11 +99,6 @@ export const SelectionLens = ({
     setMode("note");
     setMenu(false);
     window.getSelection()?.removeAllRanges();
-  };
-  const highlight = (color: Marker) => {
-    onMarker(color);
-    onSave({ highlighted: true, color });
-    close();
   };
   const run = (action: ReadingAction, question?: string) => {
     void onAsk(action, question).then((accepted) => {
@@ -311,23 +299,6 @@ export const SelectionLens = ({
             <span className="lens-divider" />
             {existing ? (
               <>
-                <div
-                  className="lens-colors"
-                  role="group"
-                  aria-label="Highlight colour"
-                >
-                  {MARKERS.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      className="marker-dot"
-                      data-color={color}
-                      aria-pressed={(insight.color ?? "yellow") === color}
-                      aria-label={`${color[0].toUpperCase() + color.slice(1)} highlight`}
-                      onClick={() => highlight(color)}
-                    />
-                  ))}
-                </div>
                 <button
                   className="lens-button icon-button"
                   type="button"
@@ -352,30 +323,18 @@ export const SelectionLens = ({
               </>
             ) : (
               <>
-                <div className="highlight-picker">
-                  <button
-                    className="lens-button icon-button"
-                    type="button"
-                    aria-label="Highlight"
-                    title="Highlight · hover for colours"
-                    onClick={() => highlight(marker)}
-                  >
-                    <Icon name="highlight" />
-                    <span className="current-marker" data-color={marker} />
-                  </button>
-                  <div className="new-highlight-colors">
-                    {MARKERS.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        className="marker-dot"
-                        data-color={color}
-                        aria-label={`Highlight in ${color}`}
-                        onClick={() => highlight(color)}
-                      />
-                    ))}
-                  </div>
-                </div>
+                <button
+                  className="lens-button icon-button"
+                  type="button"
+                  aria-label="Highlight"
+                  title="Highlight"
+                  onClick={() => {
+                    onSave({ highlighted: true });
+                    close();
+                  }}
+                >
+                  <Icon name="highlight" />
+                </button>
                 <button
                   className="lens-button icon-button"
                   type="button"

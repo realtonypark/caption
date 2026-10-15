@@ -9,7 +9,7 @@
 - A passage consists of exact character ranges in one or more paragraphs.
 - Highlighting, asking, and writing a note on the same passage update one insight. Each new question starts a separate answer thread; follow-ups stay in that thread. Separate readings never share insights.
 - Overlapping highlighted text opens the insight with the narrowest containing range. Equal-length ranges keep their saved order.
-- Highlights keep their assigned yellow, green, blue, or pink color. Adding a personal note also highlights its passage. Removing a highlight removes its personal note but preserves answer threads. Removing the last remaining content removes the insight.
+- New highlights use yellow. Adding a personal note also highlights its passage. Removing a highlight removes its personal note but preserves answer threads. Removing the last remaining content removes the insight. Saved colors from older versions remain visible.
 - AI replies stream from the selected model or its router fallback and cite valid source paragraphs. Follow-ups retain their thread history. Interrupted answers retain their question and partial text and can be retried. Web search is disabled; answers use the source text and thread history.
 - Personal-note drafts save on Enter or an outside click. Shift+Enter adds a line; Escape discards the draft.
 - Escape leaves the whole-text question bar and keeps its unfinished question for the next visit to the input. Escape during IME composition does not close an editor or move focus.

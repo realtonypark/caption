@@ -19,6 +19,8 @@ const validReading = (value: unknown): value is Reading =>
   typeof value.description === "string" &&
   ["sample", "link", "pdf"].includes(String(value.kind)) &&
   (value.location === undefined || typeof value.location === "string") &&
+  (value.addedAt === undefined ||
+    (typeof value.addedAt === "number" && Number.isFinite(value.addedAt))) &&
   typeof value.design === "number" &&
   Number.isInteger(value.design) &&
   value.design >= 0 &&

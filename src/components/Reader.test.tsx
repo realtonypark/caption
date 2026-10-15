@@ -16,6 +16,11 @@ import {
 import { Reader } from "./Reader";
 import { requestAnswer } from "../services/ai";
 
+const emptyLibrary = (): ReturnType<typeof initialLibrary> => ({
+  ...initialLibrary(),
+  insights: [],
+});
+
 vi.mock("../services/ai", async () => {
   const { demoExchange, READING_ACTIONS } = await import("../reading");
   const { FREE_MODELS } = await import("../../functions/src/models.mjs");
@@ -85,7 +90,7 @@ it("keeps an unavailable personal model explicit and does not send a question to
 });
 
 it("opens the nested note from its highlight while keeping the outer note reachable", () => {
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const text = reading.paragraphs[0].text;
   const outer = {
@@ -132,7 +137,7 @@ it("keeps the reader position when editing a note reopened from Notepad", () => 
     value: scroll,
     configurable: true,
   });
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const passage = wholeParagraph(reading, 4);
   const saved = saveInsight(
@@ -170,7 +175,7 @@ it("keeps the reader position when editing a note reopened from Notepad", () => 
 });
 
 const ReaderDemo = () => {
-  const [state, setState] = useState(initialLibrary);
+  const [state, setState] = useState(emptyLibrary);
   return (
     <Reader
       reading={state.readings[0]}
@@ -244,8 +249,18 @@ it("starts a question by typing and keeps follow-ups in their own answer thread"
   ).toBeInTheDocument();
 });
 
-it("saves notes on Enter and outside click, cancels Escape edits, and recolors highlights", () => {
+it("highlights without a note, saves notes, and cancels Escape edits", () => {
   render(<ReaderDemo />);
+  fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Highlight" }));
+  const highlighted = screen.getByRole("button", {
+    name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
+  });
+  expect(highlighted).toHaveAttribute("data-color", "yellow");
+  expect(
+    screen.queryByRole("textbox", { name: "Your note on the selected passage" }),
+  ).not.toBeInTheDocument();
+
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
   fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
   const note = screen.getByRole("textbox", {
@@ -256,6 +271,7 @@ it("saves notes on Enter and outside click, cancels Escape edits, and recolors h
   const savedNote = screen.getByRole("button", {
     name: "Your note: Remember the distinction.. Edit note.",
   });
+  expect(savedNote).toHaveAttribute("data-color", "yellow");
   fireEvent.click(savedNote);
   const editing = screen.getByRole("textbox", {
     name: "Your note on the selected passage",
@@ -276,21 +292,11 @@ it("saves notes on Enter and outside click, cancels Escape edits, and recolors h
       name: "Your note: A better note. Edit note.",
     }),
   ).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
-    }),
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Blue highlight" }));
-  expect(
-    screen.getByRole("button", {
-      name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
-    }),
-  ).toHaveAttribute("data-color", "blue");
+  expect(screen.queryByRole("button", { name: /highlight in/i })).toBeNull();
 });
 
 it("keeps a new selection when its drag ends on an existing highlight", () => {
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const passage = wholeParagraph(reading, 0);
   const state = saveInsight(
@@ -328,7 +334,7 @@ it("opens highlighted answers on mobile and keeps every thread and personal note
     removeEventListener: vi.fn(),
   }));
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
-  const initial = initialLibrary();
+  const initial = emptyLibrary();
   const reading = initial.readings[0];
   const passage = wholeParagraph(reading, 0);
   let state = saveInsight(

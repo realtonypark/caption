@@ -120,15 +120,25 @@ export const stampLibrary = (
   next: LibraryState,
   now: number,
 ): LibraryState => {
-  const stamp = <T extends { id: string; updatedAt?: number }>(
+  const stamp = <T extends { id: string; addedAt?: number; updatedAt?: number }>(
     old: T[],
     values: T[],
+    stampAddedAt = false,
   ) => {
     const previous = new Map(old.map((item) => [item.id, item]));
     return values.map((value) => {
       const prior = previous.get(value.id);
       if (prior === value) return value;
-      return { ...value, updatedAt: Math.max(now, (prior?.updatedAt ?? 0) + 1) };
+      const addedAt = stampAddedAt
+        ? prior
+          ? (prior.addedAt ?? prior.updatedAt ?? 0)
+          : (value.addedAt ?? now)
+        : undefined;
+      return {
+        ...value,
+        ...(addedAt === undefined ? {} : { addedAt }),
+        updatedAt: Math.max(now, (prior?.updatedAt ?? 0) + 1),
+      };
     });
   };
   const removed = (
@@ -148,7 +158,7 @@ export const stampLibrary = (
   };
   return {
     ...next,
-    readings: stamp(before.readings, next.readings),
+    readings: stamp(before.readings, next.readings, true),
     insights: stamp(before.insights, next.insights),
     deletedReadings: removed(
       before.readings,
@@ -202,11 +212,19 @@ export const mergeLibraries = (
     return [...values.values()];
   };
   const readings = merge(local.readings, remote.readings, deletedReadings);
+  const insights = merge(local.insights, remote.insights, deletedInsights).filter(
+    (insight) => readings.some((reading) => reading.id === insight.readingId),
+  );
+  for (const insight of sampleTutorialInsights(readings))
+    if (
+      !insights.some((existing) => existing.id === insight.id) &&
+      (deletedInsights[insight.id] === undefined ||
+        (insight.updatedAt ?? 0) > deletedInsights[insight.id])
+    )
+      insights.push(insight);
   return {
-    readings,
-    insights: merge(local.insights, remote.insights, deletedInsights).filter(
-      (insight) => readings.some((reading) => reading.id === insight.readingId),
-    ),
+    readings: orderReadingsByAddedAt(readings),
+    insights,
     deletedReadings,
     deletedInsights,
   };
@@ -365,9 +383,63 @@ export const SAMPLE_READINGS: Reading[] = [
   },
 ];
 
+const sampleTutorials = [
+  {
+    readingId: "quiet-work",
+    paragraph: 0,
+    quote:
+      "Recognition is a trace of an encounter. Understanding is something we can use.",
+  },
+  {
+    readingId: "city-map",
+    paragraph: 1,
+    quote: "Maintenance helps explain why they still work.",
+  },
+  {
+    readingId: "unfinished-thoughts",
+    paragraph: 0,
+    quote: "Eventually the promises began to feel more like invoices.",
+  },
+] as const;
+
+const sampleTutorialInsights = (readings: Reading[]): Insight[] =>
+  sampleTutorials.flatMap(({ readingId, paragraph: paragraphIndex, quote }) => {
+    const reading = readings.find((item) => item.id === readingId);
+    const paragraph = reading?.paragraphs[paragraphIndex]?.text;
+    const start = paragraph?.indexOf(quote) ?? -1;
+    if (!reading || !paragraph || start < 0) return [];
+    return [
+      {
+        id: `tutorial-${readingId}`,
+        readingId,
+        passage: {
+          quote,
+          ranges: [
+            { paragraph: paragraphIndex, start, end: start + quote.length },
+          ],
+        },
+        note: "Tutorial: select a passage and write one thought about it in the margin.",
+        exchanges: [],
+        highlighted: true,
+        color: "yellow",
+      },
+    ];
+  });
+
+export const orderReadingsByAddedAt = (readings: Reading[]) =>
+  readings
+    .map((reading, index) => ({ reading, index }))
+    .sort(
+      (a, b) =>
+        (b.reading.addedAt ?? b.reading.updatedAt ?? 0) -
+          (a.reading.addedAt ?? a.reading.updatedAt ?? 0) ||
+        a.index - b.index,
+    )
+    .map(({ reading }) => reading);
+
 export const initialLibrary = (): LibraryState => ({
   readings: SAMPLE_READINGS,
-  insights: [],
+  insights: sampleTutorialInsights(SAMPLE_READINGS),
 });
 export const normalizeLink = (input: string): string => {
   const value = input.trim();
