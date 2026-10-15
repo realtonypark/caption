@@ -10,18 +10,27 @@ import { useLibrary } from "./use-library";
 import { importLink, importPdf } from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
+import { Models } from "./components/Models";
+import { FREE_MODELS } from "./services/ai";
+import { listConnections } from "./services/providers";
 
 export const App = () => {
   const { state, update: updateLibrary, user, warning, status } = useLibrary();
   const [progress, setProgress] = useState("");
+  const [models, setModels] =
+    useState<readonly { id: string; name: string }[]>(FREE_MODELS);
+  const [modelOwner, setModelOwner] = useState<string>();
+  const [modelError, setModelError] = useState("");
   const route = useRoute();
   const pathname = route.split("?")[0];
   const current =
-    pathname === "/notepad"
-      ? "notepad"
-      : pathname.startsWith("/read/")
-        ? "reading"
-        : "library";
+    pathname === "/models"
+      ? "models"
+      : pathname === "/notepad"
+        ? "notepad"
+        : pathname.startsWith("/read/")
+          ? "reading"
+          : "library";
   const reading = state.readings.find(
     (item) => readingPath(item.id) === pathname,
   );
@@ -29,7 +38,36 @@ export const App = () => {
   const insights = reading ? readingInsights(state, reading.id) : [];
   const initialInsight = insights.find((entry) => entry.id === insightId);
   useEffect(() => {
-    document.title = `${current === "library" ? "Library" : current === "reading" ? "Reading" : "Notepad"} · Caption`;
+    let alive = true;
+    if (user && current !== "models")
+      void listConnections()
+        .then((connections) => {
+          if (alive) {
+            setModelOwner(user.uid);
+            setModelError("");
+            setModels([
+              ...FREE_MODELS,
+              ...connections.flatMap((connection) =>
+                connection.models
+                  .filter((model) => connection.enabled.includes(model.id))
+                  .map((model) => ({
+                    id: `${connection.id}::${model.id}`,
+                    name: `${connection.name} · ${model.name}`,
+                  })),
+              ),
+            ]);
+          }
+        })
+        .catch((error) => {
+          if (alive)
+            setModelError(`Provider settings unavailable: ${error.message}`);
+        });
+    return () => {
+      alive = false;
+    };
+  }, [user, current]);
+  useEffect(() => {
+    document.title = `${current === "library" ? "Library" : current === "reading" ? "Reading" : current === "models" ? "Models" : "Notepad"} · Caption`;
   }, [current]);
   return (
     <div className={current === "library" ? "app app-dark" : "app app-paper"}>
@@ -40,6 +78,11 @@ export const App = () => {
       {warning && (
         <p className="storage-warning" role="status">
           {warning}
+        </p>
+      )}
+      {modelError && current !== "models" && user && (
+        <p className="storage-warning" role="alert">
+          {modelError}
         </p>
       )}
       {current === "library" ? (
@@ -84,6 +127,8 @@ export const App = () => {
             }
           }}
         />
+      ) : current === "models" ? (
+        <Models key={user?.uid ?? "guest"} user={user} />
       ) : current === "notepad" ? (
         <Notepad state={state} />
       ) : reading ? (
@@ -92,6 +137,7 @@ export const App = () => {
           reading={reading}
           insights={insights}
           initialInsight={initialInsight}
+          models={user?.uid === modelOwner ? models : FREE_MODELS}
           onSave={(passage, patch) =>
             updateLibrary((previous) =>
               previous.readings.some((item) => item.id === reading.id)

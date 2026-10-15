@@ -30,6 +30,7 @@ interface ReaderProps {
   insights: Insight[];
   initialInsight?: Insight;
   onSave: (passage: Passage, patch: InsightPatch) => void;
+  models?: readonly { id: string; name: string }[];
 }
 interface LensSelection {
   passage: Passage;
@@ -41,6 +42,7 @@ export const Reader = ({
   insights: savedInsights,
   initialInsight,
   onSave,
+  models = FREE_MODELS,
 }: ReaderProps) => {
   const [pending, setPending] = useState<
     { id: string; passage: Passage; exchanges: Exchange[] } | undefined
@@ -414,7 +416,7 @@ export const Reader = ({
                   keepModel(event.target.value);
                 }}
               >
-                {FREE_MODELS.map((item) => (
+                {models.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
                   </option>

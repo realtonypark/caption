@@ -5,7 +5,7 @@ export const Header = ({
   current,
   account,
 }: {
-  current: "library" | "reading" | "notepad";
+  current: "library" | "reading" | "notepad" | "models";
   account?: ReactNode;
 }) => (
   <header className="site-header flex items-center justify-between">
