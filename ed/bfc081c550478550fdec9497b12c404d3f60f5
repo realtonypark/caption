@@ -1,0 +1,16 @@
+functions/src/ai.md
+  h_05e5164a29872e 5
+functions/src/models.mjs
+  h_05e5164a29872e 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "edbfc081c550478550fdec9497b12c404d3f60f5",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
