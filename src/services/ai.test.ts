@@ -5,7 +5,17 @@ import { initialLibrary, wholeParagraph } from "../reading";
 vi.mock("./firebase", () => ({ apiRequest: vi.fn() }));
 afterEach(() => vi.clearAllMocks());
 it("streams an answer, preserves thread history, and reports an incomplete stream", async () => {
-  const reading = initialLibrary().readings[0];
+  const reading = {
+    ...initialLibrary().readings[0],
+    paragraphs: [
+      {
+        text: "Context supports an idea.",
+        explanation: "",
+        heading: "Memory and attention",
+      },
+      { text: "A note helps us revisit it.", explanation: "" },
+    ],
+  };
   const options = {
     reading,
     passage: wholeParagraph(reading, 0),
@@ -27,6 +37,7 @@ it("streams an answer, preserves thread history, and reports an incomplete strea
   expect((await requestAnswer(options)).answer).toBe("Context.");
   expect(options.onText).toHaveBeenCalledWith("Context.");
   expect(vi.mocked(apiRequest).mock.calls[0][1]).toMatchObject({
+    headings: ["Memory and attention", ""],
     history: [
       { role: "user", content: "Why?" },
       { role: "assistant", content: "Because context matters." },

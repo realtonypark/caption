@@ -42,6 +42,26 @@ test("validates document boundaries and keeps conversation history in order", ()
   assert.equal(messages.at(-1).content, "An example?");
   assert.match(messages[0].content, /untrusted/);
 });
+test("keeps section context without breaking a selection across headings", () => {
+  const selected = {
+    ...body,
+    headings: ["Evidence", "Remembering"],
+    quote: body.paragraphs.join("\n\n"),
+  };
+  assert.equal(validateQuestion(selected), selected);
+  assert.match(
+    readingMessages(selected)[0].content,
+    /\[¶2\] Remembering\nA note preserves its context/,
+  );
+  assert.throws(
+    () => validateQuestion({ ...selected, headings: ["Missing a heading"] }),
+    /invalid/,
+  );
+  assert.throws(
+    () => validateQuestion({ ...selected, headings: [42, ""] }),
+    /invalid/,
+  );
+});
 test("routes a named model to the free fallback with maximum reasoning", async () => {
   let sent;
   await answerRequest(body, "test-key", undefined, async (_url, options) => {
