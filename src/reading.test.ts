@@ -7,7 +7,6 @@ import {
   wholeParagraph,
   passageSegments,
   saveInsight,
-  stripInvalidMarkers,
 } from "./reading";
 
 describe("a saved reading insight", () => {
@@ -238,11 +237,3 @@ it("composes a containing highlight with a nested answer without losing either a
   expect(segments.map((segment) => segment.text).join("")).toBe(outer.quote);
 });
 
-it("strips citation markers outside the returned citation list", () => {
-  expect(stripInvalidMarkers("Supported [¶1] but not [¶999].", [1])).toBe(
-    "Supported [¶1] but not .",
-  );
-  expect(stripInvalidMarkers("No markers here.", [1])).toBe(
-    "No markers here.",
-  );
-});

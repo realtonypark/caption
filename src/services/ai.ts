@@ -1,5 +1,5 @@
 import type { Reading, Passage, Exchange, ReadingAction } from "../reading";
-import { READING_ACTIONS, stripInvalidMarkers } from "../reading";
+import { READING_ACTIONS } from "../reading";
 import { apiRequest } from "./firebase";
 export { FREE_MODELS } from "../../functions/src/models.mjs";
 
@@ -73,7 +73,7 @@ export const requestAnswer = async (
             question,
             action,
             scope,
-            answer: stripInvalidMarkers(answer, data.paragraphs),
+            answer,
             model: data.model,
             paragraphs: data.paragraphs,
             sources: data.sources,
