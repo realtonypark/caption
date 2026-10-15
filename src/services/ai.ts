@@ -33,6 +33,7 @@ export const requestAnswer = async (
     {
       title: reading.title,
       paragraphs: reading.paragraphs.map((p) => p.text),
+      headings: reading.paragraphs.map((p) => p.heading ?? ""),
       quote: passage.quote,
       question,
       action,
