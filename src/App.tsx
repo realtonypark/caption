@@ -47,7 +47,7 @@ export const App = () => {
   const [modelError, setModelError] = useState("");
   const [editingProvider, setEditingProvider] = useState<ProviderEditing>();
   const latestLibrary = useRef({ state, updateLibrary });
-  const exampleAttempted = useRef(false);
+  const exampleAttempted = useRef<string | undefined>(undefined);
   const route = useRoute();
   const pathname = route.split("?")[0];
   const current =
@@ -67,8 +67,14 @@ export const App = () => {
   useEffect(() => {
     latestLibrary.current = { state, updateLibrary };
   });
+  const owner = user?.uid ?? "guest";
   useEffect(() => {
-    if (loading || current !== "library" || exampleAttempted.current) return;
+    if (
+      loading ||
+      current !== "library" ||
+      exampleAttempted.current === owner
+    )
+      return;
     const existing = latestLibrary.current.state;
     if (
       existing.deletedReadings?.[EXAMPLE_ID] ||
@@ -76,10 +82,10 @@ export const App = () => {
         (item) => item.id === EXAMPLE_ID || item.location === EXAMPLE_URL,
       )
     ) {
-      exampleAttempted.current = true;
+      exampleAttempted.current = owner;
       return;
     }
-    exampleAttempted.current = true;
+    exampleAttempted.current = owner;
     setProgress("Adding the example reading…");
     void importLink(EXAMPLE_URL, setProgress)
       .then((reading) => {
@@ -97,12 +103,12 @@ export const App = () => {
         setProgress("");
       })
       .catch((error: unknown) => {
-        exampleAttempted.current = false;
+        exampleAttempted.current = undefined;
         setProgress(
           `Could not add the example reading: ${error instanceof Error ? error.message : "The source could not be imported."}`,
         );
       });
-  }, [loading, current]);
+  }, [loading, current, owner]);
   useEffect(() => {
     let alive = true;
     if (user && current === "reading")
