@@ -6,7 +6,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { providerCommand, connectedProvider } from "./provider-store.mjs";
 if (!process.env.FIRESTORE_EMULATOR_HOST)
   throw new Error("Run against the Firestore emulator only.");
-initializeApp({ projectId: "caption-ai-tpark" });
+initializeApp({ projectId: "caption-purple" });
 const key = (
   await readFile(new URL("../.secret.local", import.meta.url), "utf8")
 ).match(/^OPENROUTER_KEY=(.+)$/m)[1];
