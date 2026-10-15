@@ -1,0 +1,18 @@
+src/App.tsx
+  h_05e5164a29872e 6,9,89,91-92,103-110,112-123
+src/reading.test.ts
+  h_05e5164a29872e 4,11,56-100
+src/reading.ts
+  h_05e5164a29872e 386-392,409-413,415,418-440,442-444
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d6af17d6acb8b20b440000220b1017f1173c6c14",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
