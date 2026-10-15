@@ -1,0 +1,14 @@
+firestore.indexes.json
+  h_05e5164a29872e 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f4c923b2e89a6cae3b82c1e697f66d67661b7f7",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
