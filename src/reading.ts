@@ -13,6 +13,7 @@ export interface Reading {
   location?: string;
   design: number;
   paragraphs: Paragraph[];
+  addedAt?: number;
   updatedAt?: number;
 }
 export interface TextRange {
@@ -589,6 +590,16 @@ export const answerThreads = (insights: Insight[]): AnswerThread[] => {
     (a, b) =>
       a.passage.ranges[0].paragraph - b.passage.ranges[0].paragraph ||
       a.passage.ranges[0].start - b.passage.ranges[0].start,
+  );
+};
+
+export const stripInvalidMarkers = (
+  answer: string,
+  valid: readonly number[],
+): string => {
+  const keep = new Set(valid);
+  return answer.replace(/\[¶(\d+)\]/g, (marker, digits: string) =>
+    keep.has(Number(digits)) ? marker : "",
   );
 };
 
