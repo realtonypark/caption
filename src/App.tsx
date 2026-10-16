@@ -193,18 +193,20 @@ export const App = () => {
             const current = state.readings.find(
               (reading) => reading.id === id,
             )?.title;
-            const title = window.prompt("Rename this reading", current ?? "");
-            if (title === null) return;
-            if (!title.trim()) {
+            const entered = window.prompt(
+              "Rename this reading",
+              current ?? "",
+            );
+            if (entered === null) return;
+            const title = entered.trim().slice(0, 500);
+            if (!title) {
               window.alert("A reading needs a title.");
               return;
             }
             updateLibrary((previous) => ({
               ...previous,
               readings: previous.readings.map((reading) =>
-                reading.id === id
-                  ? { ...reading, title: title.trim().slice(0, 500) }
-                  : reading,
+                reading.id === id ? { ...reading, title } : reading,
               ),
             }));
           }}
