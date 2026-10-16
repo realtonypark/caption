@@ -2022,13 +2022,13 @@ ul {
     right: 16px;
   }
 }
-.book-row {
-  position: relative;
+.book-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 10px;
 }
-.remove-book {
-  position: absolute;
-  right: 0;
-  bottom: 14px;
+.book-actions button {
   width: 32px;
   height: 32px;
   display: grid;
@@ -2037,7 +2037,7 @@ ul {
   border-radius: 6px;
   background: transparent;
 }
-.remove-book:hover {
+.book-actions button:hover {
   background: #ffffff12;
   color: #eee7d8;
 }
@@ -2046,19 +2046,6 @@ ul {
 }
 .exchange-answer > p {
   white-space: pre-wrap;
-}
-@media (max-width: 719px) {
-  .remove-book {
-    right: 0;
-    bottom: 12px;
-    top: auto;
-    width: 25px;
-    height: 25px;
-  }
-  .remove-book svg {
-    width: 13px;
-    height: 13px;
-  }
 }
 .models-page {
   max-width: 700px;

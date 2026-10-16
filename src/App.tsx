@@ -189,6 +189,25 @@ export const App = () => {
             void openBook(book, () => navigate(readingPath(id)));
           }}
           progress={progress}
+          onRename={(id) => {
+            const current = state.readings.find(
+              (reading) => reading.id === id,
+            )?.title;
+            const title = window.prompt("Rename this reading", current ?? "");
+            if (title === null) return;
+            if (!title.trim()) {
+              window.alert("A reading needs a title.");
+              return;
+            }
+            updateLibrary((previous) => ({
+              ...previous,
+              readings: previous.readings.map((reading) =>
+                reading.id === id
+                  ? { ...reading, title: title.trim().slice(0, 500) }
+                  : reading,
+              ),
+            }));
+          }}
           onRemove={(id) => {
             const title = state.readings.find(
               (reading) => reading.id === id,
