@@ -203,12 +203,16 @@ export const App = () => {
               window.alert("A reading needs a title.");
               return;
             }
-            let conflict: string | undefined;
+            let conflict: string | null | undefined;
             updateLibrary((previous) => {
               const live = previous.readings.find(
                 (reading) => reading.id === id,
               )?.title;
-              if (live !== undefined && live !== current) {
+              if (live === undefined) {
+                conflict = null;
+                return previous;
+              }
+              if (live !== current) {
                 conflict = live;
                 return previous;
               }
@@ -221,7 +225,9 @@ export const App = () => {
             });
             if (conflict !== undefined)
               window.alert(
-                `“${conflict}” changed while you were renaming. Start again from the new title.`,
+                conflict === null
+                  ? "This reading was removed while you were renaming."
+                  : `“${conflict}” changed while you were renaming. Start again from the new title.`,
               );
           }}
           onRemove={(id) => {
