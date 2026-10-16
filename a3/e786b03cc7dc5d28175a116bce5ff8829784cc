@@ -1,0 +1,24 @@
+src/App.tsx
+  h_05e5164a29872e 192-210
+src/components/Book.test.tsx
+  h_05e5164a29872e 19-49
+src/components/Book.tsx
+  h_05e5164a29872e 7,12,45-65
+src/components/Library.test.tsx
+  h_05e5164a29872e 1-31
+src/components/Library.tsx
+  h_05e5164a29872e 1,4-5,10,21,24-32,35-83
+src/index.css
+  h_05e5164a29872e 2025-2029,2031,2040
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3e786b03cc7dc5d28175a116bce5ff8829784cc",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
