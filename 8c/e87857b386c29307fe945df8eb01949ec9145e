@@ -1,0 +1,28 @@
+functions/src/import.mjs
+  h_05e5164a29872e 131-135,137-151,174-176
+functions/src/import.test.mjs
+  h_05e5164a29872e 55-73
+src/components/Reader.tsx
+  h_05e5164a29872e 517-521
+src/index.css
+  h_05e5164a29872e 667-675
+src/reading.md
+  h_05e5164a29872e 6
+src/reading.ts
+  h_05e5164a29872e 6
+src/services/import.ts
+  h_05e5164a29872e 81,138-180,199-200,211-217,219-234,278-282
+src/storage.ts
+  h_05e5164a29872e 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ce87857b386c29307fe945df8eb01949ec9145e",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
