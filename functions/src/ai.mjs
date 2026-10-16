@@ -8,7 +8,7 @@ const TASKS = {
   simplify:
     "Rewrite the passage in plain English without losing its meaning. Then state its main point.",
   check:
-    "Check the claim against the available evidence. Separate outside knowledge from the text and state uncertainty.",
+    "Check the claim against the document and the attached web results. Separate outside knowledge from the text and state uncertainty.",
   connect:
     "Find two to four passages elsewhere in the document that support, develop, or complicate this selection. Cite each one.",
   counter:
@@ -118,6 +118,10 @@ export const answerRequest = async (body, key, signal, request = fetch) => {
           chosen === "openrouter/free" ? [chosen] : [chosen, "openrouter/free"],
         messages: readingMessages(body),
         stream: true,
+        // Fact-checks ground on web results; every other action stays on the text.
+        ...(body.action === "check"
+          ? { plugins: [{ id: "web", max_results: 5 }] }
+          : {}),
         max_tokens: 32768,
         reasoning: { effort: "max", exclude: true },
       }),
