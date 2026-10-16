@@ -1,40 +1,72 @@
-import {
-  notepadMarkdown,
-  notepadGroups,
-  passageLabel,
-  type LibraryState,
-} from "../reading";
+import { useState } from "react";
+import { notepadGroups, passageLabel, type LibraryState } from "../reading";
 import { readingPath } from "../routing";
+import { exportNotepad, type ExportFormat } from "../services/export";
 import { ExchangeView } from "./ExchangeView";
 import { Icon } from "./Icon";
 import { Link } from "./Link";
 
 export const Notepad = ({ state }: { state: LibraryState }) => {
   const groups = notepadGroups(state);
+  const [exporting, setExporting] = useState<ExportFormat>();
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const run = async (format: ExportFormat) => {
+    setExporting(format);
+    setNotice("");
+    setError("");
+    try {
+      const { replaced } = await exportNotepad(state, format);
+      if (replaced)
+        setNotice(
+          `${replaced} ${replaced === 1 ? "character" : "characters"} outside the PDF's Latin character set ${replaced === 1 ? "was" : "were"} replaced with “?”. Markdown keeps every character.`,
+        );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "The notes could not be exported.",
+      );
+    } finally {
+      setExporting(undefined);
+    }
+  };
   return (
     <main id="main" className="notepad-page">
       <header className="notepad-header">
         <div className="eyebrow">A place for what stays with you</div>
         <h1>Your Notepad</h1>
         {groups.length > 0 && (
-          <button
-            type="button"
-            className="paper-button export-notepad"
-            onClick={() => {
-              const url = URL.createObjectURL(
-                new Blob([notepadMarkdown(state)], {
-                  type: "text/markdown;charset=utf-8",
-                }),
-              );
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = "caption-notepad.md";
-              link.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }}
-          >
-            Export notes
-          </button>
+          <div className="export-notepad">
+            <div
+              className="export-actions"
+              role="group"
+              aria-label="Export notes"
+            >
+              <button
+                type="button"
+                className="paper-button"
+                disabled={!!exporting}
+                onClick={() => void run("pdf")}
+              >
+                {exporting === "pdf" ? "Preparing PDF…" : "Export as PDF"}
+              </button>
+              <button
+                type="button"
+                className="paper-button"
+                disabled={!!exporting}
+                onClick={() => void run("markdown")}
+              >
+                Export as Markdown
+              </button>
+            </div>
+            {error && (
+              <p className="export-error" role="alert">
+                {error}
+              </p>
+            )}
+            {notice && <p role="status">{notice}</p>}
+          </div>
         )}
         <p>
           Highlights, questions, and little moments of understanding.
