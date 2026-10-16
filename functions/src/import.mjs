@@ -136,7 +136,20 @@ export const extractArticle = (html, url) => {
     if (element.parentElement?.closest("li,pre,table")) continue;
     if (element.tagName === "IMG") {
       const src = element.getAttribute("src") ?? "";
-      if (!src || src.startsWith("data:")) continue;
+      if (!src) continue;
+      if (src.startsWith("data:")) {
+        if (!src.startsWith("data:image/") || src.length > 350_000) {
+          omitted++;
+          continue;
+        }
+        if (kept >= 80) {
+          omitted++;
+          continue;
+        }
+        kept++;
+        paragraphs.push({ text: "(Figure)", explanation: "", image: src });
+        continue;
+      }
       if (kept >= 80) {
         omitted++;
         continue;
