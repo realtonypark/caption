@@ -203,21 +203,26 @@ export const App = () => {
               window.alert("A reading needs a title.");
               return;
             }
-            const live = latestLibrary.current.state.readings.find(
-              (reading) => reading.id === id,
-            )?.title;
-            if (live !== undefined && live !== current) {
+            let conflict: string | undefined;
+            updateLibrary((previous) => {
+              const live = previous.readings.find(
+                (reading) => reading.id === id,
+              )?.title;
+              if (live !== undefined && live !== current) {
+                conflict = live;
+                return previous;
+              }
+              return {
+                ...previous,
+                readings: previous.readings.map((reading) =>
+                  reading.id === id ? { ...reading, title } : reading,
+                ),
+              };
+            });
+            if (conflict !== undefined)
               window.alert(
-                `“${live}” changed while you were renaming. Start again from the new title.`,
+                `“${conflict}” changed while you were renaming. Start again from the new title.`,
               );
-              return;
-            }
-            updateLibrary((previous) => ({
-              ...previous,
-              readings: previous.readings.map((reading) =>
-                reading.id === id ? { ...reading, title } : reading,
-              ),
-            }));
           }}
           onRemove={(id) => {
             const title = state.readings.find(
