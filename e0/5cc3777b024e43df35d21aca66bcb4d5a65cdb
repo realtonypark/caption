@@ -1,0 +1,18 @@
+src/services/cloud-library.ts
+  h_05e5164a29872e 17
+src/services/import.test.ts
+  h_05e5164a29872e 4,45-54
+src/services/import.ts
+  h_05e5164a29872e 3,161-162,164-178,268-272,274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e05cc3777b024e43df35d21aca66bcb4d5a65cdb",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
