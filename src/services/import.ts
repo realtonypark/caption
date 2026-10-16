@@ -159,6 +159,7 @@ const initParser = async (progress: ImportProgress) => {
 
 // Figures must fit one cloud chunk (500 KB). Re-encode down until they do;
 // figures that still do not fit are omitted, never stored half-broken.
+type FigureImage = { bytes: number[]; format: string };
 const fitFigure = async (
   bytes: number[],
   format: string,
@@ -229,14 +230,19 @@ const parsePdfFile = async (
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
         pageFraction(chunk.endPage, batch.totalPages),
       );
+      const figuresByPage = new Map<number, Map<string, FigureImage>>();
+      for (const image of chunk.result.images ?? []) {
+        if (image.duplicateOf) continue;
+        let figures = figuresByPage.get(image.page);
+        if (!figures) {
+          figures = new Map<string, FigureImage>();
+          figuresByPage.set(image.page, figures);
+        }
+        figures.set(image.id, image);
+      }
       for (const page of chunk.result.pages) {
-        const figures = new Map(
-          (chunk.result.images ?? [])
-            .filter(
-              (image) => image.page === page.pageNum && !image.duplicateOf,
-            )
-            .map((image) => [image.id, image]),
-        );
+        const figures: Map<string, FigureImage> =
+          figuresByPage.get(page.pageNum) ?? new Map();
         for (const block of page.blocks ?? []) {
           if (block.kind === "figure") {
             const figure = block.id ? figures.get(block.id) : undefined;
