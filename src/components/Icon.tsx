@@ -22,6 +22,7 @@ type IconName =
   | "simplify"
   | "related"
   | "scale"
+  | "stop"
   | "globe";
 const paths: Record<IconName, string> = {
   arrow: "M4 12h15m-6-6 6 6-6 6",
@@ -47,6 +48,7 @@ const paths: Record<IconName, string> = {
   simplify: "M20 3c-9-2-14 3-15 13l5 1c8-2 11-7 10-14ZM3 21 15 9",
   related: "M5 5h.01M19 5h.01M12 19h.01M5 5l14 0-7 14-7-14Z",
   scale: "M12 3v18m-5 0h10M4 7h16M4 7l-3 7h6L4 7Zm16 0-3 7h6l-3-7Z",
+  stop: "M7 7h10v10H7z",
   globe:
     "M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3c4 4 4 14 0 18-4-4-4-14 0-18Z",
 };

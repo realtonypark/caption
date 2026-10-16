@@ -252,7 +252,7 @@ it("starts a question by typing and keeps follow-ups in their own answer thread"
 it("highlights without a note, saves notes, and cancels Escape edits", () => {
   render(<ReaderDemo />);
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
-  fireEvent.click(screen.getByRole("button", { name: "Highlight" }));
+  fireEvent.click(screen.getByRole("button", { name: "Highlight in yellow" }));
   const highlighted = screen.getByRole("button", {
     name: `Open saved insight: ${initialLibrary().readings[0].paragraphs[0].text}`,
   });
@@ -262,7 +262,7 @@ it("highlights without a note, saves notes, and cancels Escape edits", () => {
   ).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
-  fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+  fireEvent.click(screen.getByRole("button", { name: "Note" }));
   const note = screen.getByRole("textbox", {
     name: "Your note on the selected passage",
   });
@@ -320,7 +320,7 @@ it("keeps a new selection when its drag ends on an existing highlight", () => {
   fireEvent.click(mark);
   expect(screen.getByRole("button", { name: "Define" })).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Add a note" }),
+    screen.getByRole("button", { name: "Note" }),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Edit note" }),
@@ -423,7 +423,7 @@ it("opens highlighted answers on mobile and keeps every thread and personal note
 it("keeps note and question editors open when Escape dismisses an IME candidate", () => {
   render(<ReaderDemo />);
   fireEvent.click(screen.getByRole("button", { name: "Select paragraph 1" }));
-  fireEvent.click(screen.getByRole("button", { name: "Add a note" }));
+  fireEvent.click(screen.getByRole("button", { name: "Note" }));
   const note = screen.getByRole("textbox", {
     name: "Your note on the selected passage",
   });

@@ -646,6 +646,16 @@ ul {
   width: 14px;
   height: 14px;
 }
+.reading-instruction summary {
+  cursor: pointer;
+  list-style-position: inside;
+}
+.reading-instruction ul {
+  margin: 10px 0 0 18px;
+  display: grid;
+  gap: 4px;
+  list-style: disc;
+}
 .paragraph-section + .paragraph-section {
   margin-top: 27px;
 }
@@ -1134,11 +1144,43 @@ ul {
   flex-shrink: 0;
   margin-inline: 3px;
 }
-.icon-button {
-  width: 32px;
-  justify-content: center;
+.lens-dot {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-inline: 3px;
   padding: 0;
-  position: relative;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marker);
+  cursor: pointer;
+}
+.lens-dot:hover {
+  filter: brightness(1.08);
+}
+.lens-dot[data-active="true"] {
+  box-shadow:
+    0 0 0 2px #1d1b18,
+    0 0 0 4px #f3efe6;
+}
+.lens-delete {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: #aaa18f;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+}
+.lens-delete:hover {
+  color: #ff9d8a;
+  background: #34312c;
+}
+.lens-delete svg {
+  width: 15px;
+  height: 15px;
 }
 .lens-pointer {
   position: absolute;
@@ -1975,17 +2017,6 @@ ul {
   color: #843d28;
   border-radius: 8px;
 }
-.stop-answer {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 65;
-  padding: 10px 16px;
-  background: #4a493f;
-  color: white;
-  border-radius: 8px;
-  font-size: 13px;
-}
 .exchange-answer > a {
   display: block;
   color: #775738;
@@ -2016,10 +2047,6 @@ ul {
   }
   .account-popover {
     width: 250px;
-  }
-  .stop-answer {
-    bottom: 72px;
-    right: 16px;
   }
 }
 .book-row {

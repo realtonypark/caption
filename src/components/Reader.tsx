@@ -371,15 +371,6 @@ export const Reader = ({
           {requestError}
         </p>
       )}
-      {pending?.exchanges.at(-1)?.status === "pending" && (
-        <button
-          type="button"
-          className="stop-answer"
-          onClick={() => requestRef.current?.abort()}
-        >
-          Stop answer
-        </button>
-      )}
       <div className="reading-layout">
         <article
           ref={articleRef}
@@ -412,10 +403,17 @@ export const Reader = ({
                 )}
               </p>
             )}
-            <div className="reading-instruction flex items-center gap-2">
-              <Icon name="pen" />
-              <span>Select a line. Make it yours.</span>
-            </div>
+            <details className="reading-instruction">
+              <summary className="flex items-center gap-2">
+                <Icon name="pen" />
+                <span>Select a line. Make it yours.</span>
+              </summary>
+              <ul>
+                <li>Select text for Ask, Explain, highlight colors, and notes.</li>
+                <li>¶ selects a whole paragraph. / asks about the whole text.</li>
+                <li>Esc closes answers. Your notes land in the margin.</li>
+              </ul>
+            </details>
           </header>
           <div className="article-body">
             {reading.paragraphs.map((paragraph, index) => (
@@ -518,6 +516,11 @@ export const Reader = ({
           </div>
           <QuestionComposer
             inputRef={composerRef}
+            onStop={
+              pending?.exchanges.at(-1)?.status === "pending"
+                ? () => requestRef.current?.abort()
+                : undefined
+            }
             onAsk={(question) => {
               const paragraphs = Array.from(
                 articleRef.current?.querySelectorAll<HTMLElement>(
