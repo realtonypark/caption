@@ -1,0 +1,14 @@
+src/services/import.ts
+  h_05e5164a29872e 162,233-242,244-245
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9afc137003cee234cd1b50f196bbc77ae6b90ef4",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
