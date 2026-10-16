@@ -1,0 +1,22 @@
+functions/src/import.mjs
+  h_05e5164a29872e 40-44,86,90-94,111-114,140-141,143,167,171,173,178-179,191-214,228
+src/services/cloud-library.ts
+  h_05e5164a29872e 11-16
+src/reading.ts
+  h_05e5164a29872e 30-32
+functions/src/import.test.mjs
+  h_05e5164a29872e 56,67-74,77,103,117-119
+src/services/import.ts
+  h_05e5164a29872e 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "abb53468037c302929d6e18a54dd8ace41dd34c9",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
