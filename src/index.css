@@ -2044,6 +2044,20 @@ ul {
 .export-notepad {
   margin: 20px 0 0;
 }
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.export-notepad p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+  color: #716d59;
+}
+.export-notepad .export-error {
+  color: #a4412a;
+}
 .exchange-answer > p {
   white-space: pre-wrap;
 }

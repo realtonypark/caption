@@ -11,7 +11,7 @@ import {
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { useLibrary } from "./use-library";
-import { importLink, importPdf } from "./services/import";
+import { importFile, importLink } from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 import { FREE_MODELS } from "./services/ai";
@@ -213,7 +213,7 @@ export const App = () => {
               const reading =
                 kind === "link"
                   ? await importLink(label, setProgress)
-                  : await importPdf(file!, setProgress);
+                  : await importFile(file!, setProgress);
               updateLibrary((previous) => ({
                 ...previous,
                 readings: [...previous.readings, reading],
