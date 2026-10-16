@@ -53,7 +53,7 @@ test("extracts article text and headings without evaluating source scripts", asy
   );
 });
 
-test("keeps article images as figure paragraphs with absolute URLs", async () => {
+test("embeds remote article images as data URLs at import", async () => {
   const source =
     "<html><head><title>With figures</title></head><body><article><h1>With figures</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -64,12 +64,17 @@ test("keeps article images as figure paragraphs with absolute URLs", async () =>
       10,
     ) +
     "</p></article></body></html>";
-  const article = await extractArticle(source, "https://example.com/article", async () => [
-    { address: "93.184.216.34", family: 4 },
-  ]);
+  const article = await extractArticle(
+    source,
+    "https://example.com/article",
+    async (absolute) => {
+      assert.equal(absolute, "https://example.com/files/map.png");
+      return { bytes: Buffer.from("map-bytes"), type: "image/png" };
+    },
+  );
   assert.deepEqual(
     article.paragraphs.map((p) => p.image ?? null),
-    [null, "https://example.com/files/map.png", null],
+    [null, `data:image/png;base64,${Buffer.from("map-bytes").toString("base64")}`, null],
   );
   assert.equal(article.paragraphs[1].text, "(Figure)");
 });
@@ -95,7 +100,7 @@ test("keeps small embedded images and counts oversized ones", async () => {
   assert.match(article.description, /1 figures omitted/);
 });
 
-test("omits article images on private network hosts", async () => {
+test("omits article images when the image fetch fails", async () => {
   const source =
     "<html><head><title>Private</title></head><body><article><h1>Private</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -109,7 +114,9 @@ test("omits article images on private network hosts", async () => {
   const article = await extractArticle(
     source,
     "https://example.com/article",
-    async () => [{ address: "127.0.0.1", family: 4 }],
+    async () => {
+      throw new Error("Private network addresses cannot be imported.");
+    },
   );
   assert.ok(article.paragraphs.every((p) => !p.image));
   assert.match(article.description, /1 figures omitted/);

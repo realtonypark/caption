@@ -1,6 +1,5 @@
 import type { Reading, Paragraph } from "../reading";
-import { BOOK_DESIGN_COUNT } from "../reading";
-import { CHUNK_BUDGET } from "./cloud-library";
+import { BOOK_DESIGN_COUNT, CHUNK_BUDGET } from "../reading";
 import { apiRequest } from "./firebase";
 
 export type ImportProgress = (message: string, fraction?: number) => void;
