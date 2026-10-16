@@ -141,12 +141,15 @@ export const extractArticle = (html, url) => {
         omitted++;
         continue;
       }
+      let image;
+      try {
+        image = new URL(src, url).href;
+      } catch {
+        omitted++;
+        continue;
+      }
       kept++;
-      paragraphs.push({
-        text: "(Figure)",
-        explanation: "",
-        image: new URL(src, url).href,
-      });
+      paragraphs.push({ text: "(Figure)", explanation: "", image });
       continue;
     }
     const text = element.textContent.replace(/\s+/g, " ").trim();

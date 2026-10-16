@@ -71,3 +71,19 @@ test("keeps article images as figure paragraphs with absolute URLs", () => {
   );
   assert.equal(article.paragraphs[1].text, "(Figure)");
 });
+
+test("skips malformed article images without failing the import", () => {
+  const source =
+    "<html><head><title>Bad figure</title></head><body><article><h1>Bad figure</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="https://"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = extractArticle(source, "https://example.com/article");
+  assert.ok(article.paragraphs.every((p) => !p.image));
+  assert.match(article.description, /1 figures omitted/);
+});
