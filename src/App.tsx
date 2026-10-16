@@ -203,6 +203,15 @@ export const App = () => {
               window.alert("A reading needs a title.");
               return;
             }
+            const live = latestLibrary.current.state.readings.find(
+              (reading) => reading.id === id,
+            )?.title;
+            if (live !== undefined && live !== current) {
+              window.alert(
+                `“${live}” changed while you were renaming. Start again from the new title.`,
+              );
+              return;
+            }
             updateLibrary((previous) => ({
               ...previous,
               readings: previous.readings.map((reading) =>
