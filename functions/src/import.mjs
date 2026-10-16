@@ -100,7 +100,7 @@ export const downloadSource = async (raw, signal) => {
   throw new Error("That link redirected too many times.");
 };
 
-export const extractArticle = (html, url) => {
+export const extractArticle = async (html, url, resolve) => {
   const { document } = parseHTML(html);
   const base = document.createElement("base");
   base.setAttribute("href", url);
@@ -161,7 +161,9 @@ export const extractArticle = (html, url) => {
         omitted++;
         continue;
       }
-      if (!image.startsWith("http://") && !image.startsWith("https://")) {
+      try {
+        await checkedUrl(image, resolve);
+      } catch {
         omitted++;
         continue;
       }

@@ -34,7 +34,7 @@ test("blocks private, mapped, metadata, multicast, and reserved network addresse
   ])
     await assert.rejects(checkedUrl(url), /public/);
 });
-test("extracts article text and headings without evaluating source scripts", () => {
+test("extracts article text and headings without evaluating source scripts", async () => {
   const source =
     "<html><head><title>A real article</title></head><body><nav>Menu</nav><article><h1>A real article</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -45,7 +45,7 @@ test("extracts article text and headings without evaluating source scripts", () 
       10,
     ) +
     '</p><script>throw new Error("Do not execute source HTML")</script></article></body></html>';
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article");
   assert.equal(article.title, "A real article");
   assert.ok(article.paragraphs.some((p) => p.heading === "Everyday access"));
   assert.ok(
@@ -53,7 +53,7 @@ test("extracts article text and headings without evaluating source scripts", () 
   );
 });
 
-test("keeps article images as figure paragraphs with absolute URLs", () => {
+test("keeps article images as figure paragraphs with absolute URLs", async () => {
   const source =
     "<html><head><title>With figures</title></head><body><article><h1>With figures</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -64,7 +64,9 @@ test("keeps article images as figure paragraphs with absolute URLs", () => {
       10,
     ) +
     "</p></article></body></html>";
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article", async () => [
+    { address: "93.184.216.34", family: 4 },
+  ]);
   assert.deepEqual(
     article.paragraphs.map((p) => p.image ?? null),
     [null, "https://example.com/files/map.png", null],
@@ -72,7 +74,7 @@ test("keeps article images as figure paragraphs with absolute URLs", () => {
   assert.equal(article.paragraphs[1].text, "(Figure)");
 });
 
-test("keeps small embedded images and counts oversized ones", () => {
+test("keeps small embedded images and counts oversized ones", async () => {
   const tiny =
     "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
   const source =
@@ -85,7 +87,7 @@ test("keeps small embedded images and counts oversized ones", () => {
       10,
     ) +
     "</p></article></body></html>";
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article");
   assert.deepEqual(
     article.paragraphs.map((p) => p.image ?? null),
     [null, tiny, null],
@@ -93,7 +95,27 @@ test("keeps small embedded images and counts oversized ones", () => {
   assert.match(article.description, /1 figures omitted/);
 });
 
-test("omits non-web article image schemes", () => {
+test("omits article images on private network hosts", async () => {
+  const source =
+    "<html><head><title>Private</title></head><body><article><h1>Private</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="https://intranet.test/map.png"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(
+    source,
+    "https://example.com/article",
+    async () => [{ address: "127.0.0.1", family: 4 }],
+  );
+  assert.ok(article.paragraphs.every((p) => !p.image));
+  assert.match(article.description, /1 figures omitted/);
+});
+
+test("omits non-web article image schemes", async () => {
   const source =
     "<html><head><title>Schemes</title></head><body><article><h1>Schemes</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -104,12 +126,12 @@ test("omits non-web article image schemes", () => {
       10,
     ) +
     "</p></article></body></html>";
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article");
   assert.ok(article.paragraphs.every((p) => !p.image));
   assert.match(article.description, /1 figures omitted/);
 });
 
-test("skips malformed article images without failing the import", () => {
+test("skips malformed article images without failing the import", async () => {
   const source =
     "<html><head><title>Bad figure</title></head><body><article><h1>Bad figure</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -120,7 +142,7 @@ test("skips malformed article images without failing the import", () => {
       10,
     ) +
     "</p></article></body></html>";
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article");
   assert.ok(article.paragraphs.every((p) => !p.image));
   assert.match(article.description, /1 figures omitted/);
 });
