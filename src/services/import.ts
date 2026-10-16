@@ -13,6 +13,16 @@ export const cleanBlockText = (text: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+export const pageFraction = (endPage: number, totalPages: number): number =>
+  Math.min(1, endPage / totalPages);
+
+export const partialFailureMessage = (
+  fileCount: number,
+  readingCount: number,
+  failures: string[],
+): string =>
+  `Added ${readingCount} of ${fileCount}. Could not import: ${failures.join(" ")}`;
+
 const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
   const characters = source.paragraphs.reduce(
     (total, paragraph) =>
@@ -159,7 +169,7 @@ const parsePdfFile = async (
     ) {
       progress(
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
-        chunk.endPage / batch.totalPages,
+        pageFraction(chunk.endPage, batch.totalPages),
       );
       for (const page of chunk.result.pages) {
         for (const block of page.blocks ?? []) {

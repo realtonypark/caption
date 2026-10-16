@@ -11,7 +11,12 @@ import {
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { useLibrary } from "./use-library";
-import { importFiles, importLink, type ImportProgress } from "./services/import";
+import {
+  importFiles,
+  importLink,
+  partialFailureMessage,
+  type ImportProgress,
+} from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 import { FREE_MODELS } from "./services/ai";
@@ -230,7 +235,14 @@ export const App = () => {
                 ...previous,
                 readings: [...previous.readings, ...readings],
               }));
-              if (failures.length) throw new Error(failures.join(" "));
+              if (failures.length)
+                throw new Error(
+                  partialFailureMessage(
+                    files!.length,
+                    readings.length,
+                    failures,
+                  ),
+                );
               navigate(readingPath(readings[0].id));
             } finally {
               setProgress({ message: "" });
