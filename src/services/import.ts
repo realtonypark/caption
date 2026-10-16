@@ -14,7 +14,7 @@ export const cleanBlockText = (text: string): string =>
     .trim();
 
 export const pageFraction = (endPage: number, totalPages: number): number =>
-  Math.min(1, endPage / totalPages);
+  totalPages > 0 ? Math.min(1, endPage / totalPages) : 0;
 
 export const partialFailureMessage = (
   fileCount: number,
@@ -74,14 +74,26 @@ export const importLink = async (
   return completeReading({ ...source, kind: "link" });
 };
 
+let wasmModule:
+  | Promise<typeof import("@llamaindex/liteparse-wasm")>
+  | undefined;
+
 const initParser = async (progress: ImportProgress) => {
   progress("Preparing the PDF…");
-  const [{ default: init, LiteParse }, { default: wasmUrl }] =
-    await Promise.all([
-      import("@llamaindex/liteparse-wasm"),
-      import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
-    ]);
-  await init({ module_or_path: wasmUrl });
+  wasmModule ??= (async () => {
+    try {
+      const [module, { default: wasmUrl }] = await Promise.all([
+        import("@llamaindex/liteparse-wasm"),
+        import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
+      ]);
+      await module.default({ module_or_path: wasmUrl });
+      return module;
+    } catch (error) {
+      wasmModule = undefined;
+      throw error;
+    }
+  })();
+  const { LiteParse } = await wasmModule;
   let worker:
     | Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>
     | undefined;
@@ -249,7 +261,7 @@ export const importText = async (file: File): Promise<Reading> => {
   if (file.size > 5_000_000)
     throw new Error("Choose a text file smaller than 5 MB.");
   const paragraphs = (await file.text())
-    .split(/\n\s*\n/)
+    .split(/\n\s*\n/, 10_001)
     .map((text) => text.replace(/\s+/g, " ").trim())
     .filter(Boolean)
     .map((text) => ({ text, explanation: "" }));

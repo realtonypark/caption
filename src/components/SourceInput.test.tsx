@@ -36,7 +36,11 @@ it("associates errors with their own source input and clears them independently"
     new File(["notes"], "lecture.txt", { type: "text/plain" }),
   ];
   fireEvent.change(pdf, { target: { files } });
-  expect(add).toHaveBeenCalledWith("file", "reading.pdf, lecture.txt", files);
+  expect(add).toHaveBeenCalledWith({
+    kind: "file",
+    label: "reading.pdf, lecture.txt",
+    files,
+  });
   await waitFor(() => expect(pdf).not.toBeDisabled());
   expect(pdf).toHaveAttribute("aria-invalid", "false");
   expect(pdf).not.toHaveAccessibleDescription(/Choose PDF or text files/);

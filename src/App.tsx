@@ -219,10 +219,10 @@ export const App = () => {
                 ),
               }));
           }}
-          onAdd={async (kind, label, files) => {
+          onAdd={async (input) => {
             try {
-              if (kind === "link") {
-                const reading = await importLink(label, report);
+              if (input.kind === "link") {
+                const reading = await importLink(input.label, report);
                 updateLibrary((previous) => ({
                   ...previous,
                   readings: [...previous.readings, reading],
@@ -230,7 +230,10 @@ export const App = () => {
                 navigate(readingPath(reading.id));
                 return;
               }
-              const { readings, failures } = await importFiles(files!, report);
+              const { readings, failures } = await importFiles(
+                input.files,
+                report,
+              );
               updateLibrary((previous) => ({
                 ...previous,
                 readings: [...previous.readings, ...readings],
@@ -238,7 +241,7 @@ export const App = () => {
               if (failures.length)
                 throw new Error(
                   partialFailureMessage(
-                    files!.length,
+                    input.files.length,
                     readings.length,
                     failures,
                   ),

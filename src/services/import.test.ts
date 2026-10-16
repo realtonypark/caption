@@ -37,3 +37,7 @@ it("clamps page progress to the bar and names partial failures", () => {
     "Added 2 of 3. Could not import: b.pdf: too big",
   );
 });
+
+it("reports zero progress for an empty document", () => {
+  expect(pageFraction(0, 0)).toBe(0);
+});
