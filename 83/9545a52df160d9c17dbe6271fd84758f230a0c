@@ -1,0 +1,14 @@
+src/App.tsx
+  h_05e5164a29872e 206-214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "839545a52df160d9c17dbe6271fd84758f230a0c",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
