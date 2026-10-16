@@ -1,0 +1,32 @@
+artifacts/qa/mobile-reader.html
+  h_05e5164a29872e 1
+artifacts/ui/annotation-mobile.html
+  h_05e5164a29872e 1
+artifacts/ui/mobile.html
+  h_05e5164a29872e 1-5
+functions/src/import.mjs
+  h_05e5164a29872e 40-44,86,90-94,111-114,140-141,143,167,171,173,178-179,191-214,228
+functions/src/import.test.mjs
+  h_05e5164a29872e 56,67-74,77,103,117-119
+reference/models-page-implementation/IMPLEMENTATION.md
+  h_05e5164a29872e 1-521
+reference/stripe-press/Stripe-Press-Implementation-Note.md
+  h_05e5164a29872e 1-452
+src/reading.ts
+  h_05e5164a29872e 30-32
+src/services/cloud-library.ts
+  h_05e5164a29872e 11-16
+src/services/import.ts
+  h_05e5164a29872e 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8fff5d3f852a681d6ca3f62e60d85001d5a49aab",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
