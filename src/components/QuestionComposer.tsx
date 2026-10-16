@@ -5,10 +5,12 @@ import { Icon } from "./Icon";
 export const QuestionComposer = ({
   inputRef,
   onAsk,
+  onStop,
   children,
 }: {
   inputRef: RefObject<HTMLInputElement | null>;
   onAsk: (question: string) => Promise<boolean>;
+  onStop?: () => void;
   children: ReactNode;
 }) => {
   const [question, setQuestion] = useState("");
@@ -62,15 +64,26 @@ export const QuestionComposer = ({
             placeholder="Ask about the whole text"
             aria-label="Ask anything about the whole text"
           />
-          {!focused && !question && <kbd>/</kbd>}
-          <button
-            type="submit"
-            className="composer-send"
-            disabled={!question.trim()}
-            aria-label="Ask about the whole text"
-          >
-            <Icon name="up" />
-          </button>
+          {!focused && !question && !onStop && <kbd>/</kbd>}
+          {onStop ? (
+            <button
+              type="button"
+              className="composer-send"
+              onClick={onStop}
+              aria-label="Stop answer"
+            >
+              <Icon name="stop" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="composer-send"
+              disabled={!question.trim()}
+              aria-label="Ask about the whole text"
+            >
+              <Icon name="up" />
+            </button>
+          )}
         </form>
         <div className="composer-toolbar">
           {children}
