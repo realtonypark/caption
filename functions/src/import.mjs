@@ -161,6 +161,10 @@ export const extractArticle = (html, url) => {
         omitted++;
         continue;
       }
+      if (!image.startsWith("http://") && !image.startsWith("https://")) {
+        omitted++;
+        continue;
+      }
       kept++;
       paragraphs.push({ text: "(Figure)", explanation: "", image });
       continue;
