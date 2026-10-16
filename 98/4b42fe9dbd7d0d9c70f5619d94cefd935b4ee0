@@ -1,0 +1,20 @@
+functions/src/ai.md
+  h_05e5164a29872e 5
+functions/src/ai.mjs
+  h_05e5164a29872e 11,121-124
+functions/src/ai.test.mjs
+  h_05e5164a29872e 98-108
+src/reading.md
+  h_05e5164a29872e 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "984b42fe9dbd7d0d9c70f5619d94cefd935b4ee0",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
