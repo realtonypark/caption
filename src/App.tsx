@@ -11,7 +11,12 @@ import {
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { useLibrary } from "./use-library";
-import { importFiles, importLink, type ImportProgress } from "./services/import";
+import {
+  importFiles,
+  importLink,
+  partialFailureMessage,
+  type ImportProgress,
+} from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 import { FREE_MODELS } from "./services/ai";
@@ -214,10 +219,10 @@ export const App = () => {
                 ),
               }));
           }}
-          onAdd={async (kind, label, files) => {
+          onAdd={async (input) => {
             try {
-              if (kind === "link") {
-                const reading = await importLink(label, report);
+              if (input.kind === "link") {
+                const reading = await importLink(input.label, report);
                 updateLibrary((previous) => ({
                   ...previous,
                   readings: [...previous.readings, reading],
@@ -225,12 +230,22 @@ export const App = () => {
                 navigate(readingPath(reading.id));
                 return;
               }
-              const { readings, failures } = await importFiles(files!, report);
+              const { readings, failures } = await importFiles(
+                input.files,
+                report,
+              );
               updateLibrary((previous) => ({
                 ...previous,
                 readings: [...previous.readings, ...readings],
               }));
-              if (failures.length) throw new Error(failures.join(" "));
+              if (failures.length)
+                throw new Error(
+                  partialFailureMessage(
+                    input.files.length,
+                    readings.length,
+                    failures,
+                  ),
+                );
               navigate(readingPath(readings[0].id));
             } finally {
               setProgress({ message: "" });

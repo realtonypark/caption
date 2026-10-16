@@ -1,5 +1,10 @@
 import { expect, it } from "vitest";
-import { cleanBlockText, importText } from "./import";
+import {
+  cleanBlockText,
+  importText,
+  pageFraction,
+  partialFailureMessage,
+} from "./import";
 
 it("joins hard line breaks inside a PDF text block", () => {
   expect(cleanBlockText("Studies of\nattention show\nresults")).toBe(
@@ -23,4 +28,16 @@ it("imports a text file split on blank lines", async () => {
   await expect(importText(new File(["   \n  "], "empty.txt"))).rejects.toThrow(
     "No readable text",
   );
+});
+
+it("clamps page progress to the bar and names partial failures", () => {
+  expect(pageFraction(401, 400)).toBe(1);
+  expect(pageFraction(20, 40)).toBe(0.5);
+  expect(partialFailureMessage(3, 2, ["b.pdf: too big"])).toBe(
+    "Added 2 of 3. Could not import: b.pdf: too big",
+  );
+});
+
+it("reports zero progress for an empty document", () => {
+  expect(pageFraction(0, 0)).toBe(0);
 });

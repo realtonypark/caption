@@ -1,14 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { normalizeLink } from "../reading";
 import { Icon } from "./Icon";
+export type SourceAdd =
+  | { kind: "link"; label: string }
+  | { kind: "file"; label: string; files: File[] };
 export const SourceInput = ({
   onAdd,
 }: {
-  onAdd: (
-    kind: "link" | "file",
-    label: string,
-    files?: File[],
-  ) => void | Promise<void>;
+  onAdd: (input: SourceAdd) => void | Promise<void>;
 }) => {
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
@@ -20,7 +19,7 @@ export const SourceInput = ({
       const url = normalizeLink(link);
       setLinkError("");
       setBusy(true);
-      await onAdd("link", url);
+      await onAdd({ kind: "link", label: url });
     } catch (reason) {
       setLinkError(
         reason instanceof Error ? reason.message : "Enter a valid web link.",
@@ -91,11 +90,11 @@ export const SourceInput = ({
                 const input = event.currentTarget;
                 setBusy(true);
                 try {
-                  await onAdd(
-                    "file",
-                    files.map((file) => file.name).join(", "),
+                  await onAdd({
+                    kind: "file",
+                    label: files.map((file) => file.name).join(", "),
                     files,
-                  );
+                  });
                 } catch (error) {
                   setPdfError(
                     error instanceof Error

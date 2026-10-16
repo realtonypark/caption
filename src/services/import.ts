@@ -13,6 +13,16 @@ export const cleanBlockText = (text: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+export const pageFraction = (endPage: number, totalPages: number): number =>
+  totalPages > 0 ? Math.min(1, endPage / totalPages) : 0;
+
+export const partialFailureMessage = (
+  fileCount: number,
+  readingCount: number,
+  failures: string[],
+): string =>
+  `Added ${readingCount} of ${fileCount}. Could not import: ${failures.join(" ")}`;
+
 const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
   const characters = source.paragraphs.reduce(
     (total, paragraph) =>
@@ -64,14 +74,26 @@ export const importLink = async (
   return completeReading({ ...source, kind: "link" });
 };
 
+let wasmModule:
+  | Promise<typeof import("@llamaindex/liteparse-wasm")>
+  | undefined;
+
 const initParser = async (progress: ImportProgress) => {
   progress("Preparing the PDF…");
-  const [{ default: init, LiteParse }, { default: wasmUrl }] =
-    await Promise.all([
-      import("@llamaindex/liteparse-wasm"),
-      import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
-    ]);
-  await init({ module_or_path: wasmUrl });
+  wasmModule ??= (async () => {
+    try {
+      const [module, { default: wasmUrl }] = await Promise.all([
+        import("@llamaindex/liteparse-wasm"),
+        import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
+      ]);
+      await module.default({ module_or_path: wasmUrl });
+      return module;
+    } catch (error) {
+      wasmModule = undefined;
+      throw error;
+    }
+  })();
+  const { LiteParse } = await wasmModule;
   let worker:
     | Awaited<ReturnType<(typeof import("tesseract.js"))["createWorker"]>>
     | undefined;
@@ -205,7 +227,7 @@ const parsePdfFile = async (
     ) {
       progress(
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
-        chunk.endPage / batch.totalPages,
+        pageFraction(chunk.endPage, batch.totalPages),
       );
       for (const page of chunk.result.pages) {
         const figures = new Map(
@@ -312,7 +334,7 @@ export const importText = async (file: File): Promise<Reading> => {
   if (file.size > 5_000_000)
     throw new Error("Choose a text file smaller than 5 MB.");
   const paragraphs = (await file.text())
-    .split(/\n\s*\n/)
+    .split(/\n\s*\n/, 10_001)
     .map((text) => text.replace(/\s+/g, " ").trim())
     .filter(Boolean)
     .map((text) => ({ text, explanation: "" }));
