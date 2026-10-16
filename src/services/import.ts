@@ -1,5 +1,6 @@
 import type { Reading, Paragraph } from "../reading";
 import { BOOK_DESIGN_COUNT } from "../reading";
+import { CHUNK_BUDGET } from "./cloud-library";
 import { apiRequest } from "./firebase";
 
 export type ImportProgress = (message: string, fraction?: number) => void;
@@ -157,9 +158,24 @@ const initParser = async (progress: ImportProgress) => {
   };
 };
 
-// Figures must fit one cloud chunk (500 KB). Re-encode down until they do;
-// figures that still do not fit are omitted, never stored half-broken.
+// Figures must fit one cloud chunk. Re-encode down toward the budget; the
+// final serialized paragraph is gated exactly, never stored half-broken.
 type FigureImage = { bytes: number[]; format: string };
+export const figureParagraph = (
+  image: string,
+  page: number,
+): Paragraph | null => {
+  const paragraph: Paragraph = {
+    text: "(Figure)",
+    explanation: "",
+    image,
+    page,
+  };
+  return new TextEncoder().encode(JSON.stringify(paragraph)).length <=
+    CHUNK_BUDGET
+    ? paragraph
+    : null;
+};
 const fitFigure = async (
   bytes: number[],
   format: string,
@@ -249,14 +265,13 @@ const parsePdfFile = async (
             const image = figure
               ? await fitFigure(figure.bytes, figure.format)
               : null;
-            if (image && kept < 80) {
+            const paragraph =
+              image && kept < 80
+                ? figureParagraph(image, page.pageNum)
+                : null;
+            if (paragraph) {
               kept++;
-              paragraphs.push({
-                text: "(Figure)",
-                explanation: "",
-                image,
-                page: page.pageNum,
-              });
+              paragraphs.push(paragraph);
             } else omitted++;
             continue;
           }

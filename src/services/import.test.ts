@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   cleanBlockText,
+  figureParagraph,
   importText,
   pageFraction,
   partialFailureMessage,
@@ -40,4 +41,14 @@ it("clamps page progress to the bar and names partial failures", () => {
 
 it("reports zero progress for an empty document", () => {
   expect(pageFraction(0, 0)).toBe(0);
+});
+
+it("omits figure images whose serialized paragraph exceeds the chunk budget", () => {
+  const kept = figureParagraph("data:image/jpeg;base64,AAA", 3);
+  expect(kept).toMatchObject({
+    text: "(Figure)",
+    image: "data:image/jpeg;base64,AAA",
+    page: 3,
+  });
+  expect(figureParagraph("x".repeat(600_000), 1)).toBeNull();
 });

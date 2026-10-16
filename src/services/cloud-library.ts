@@ -14,7 +14,7 @@ type StoredParagraph = Reading["paragraphs"][number] & {
   continuation?: boolean;
 };
 
-const CHUNK_BUDGET = 500000;
+export const CHUNK_BUDGET = 500000;
 
 const splitParagraph = (
   paragraph: Reading["paragraphs"][number],
