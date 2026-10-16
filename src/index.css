@@ -664,6 +664,15 @@ ul {
   line-height: 1.95;
   color: #48483e;
 }
+.paragraph-figure {
+  margin: 12px 0 0;
+}
+.paragraph-figure img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+  background: #fff;
+}
 .paragraph-number {
   position: absolute;
   right: calc(100% + 15px);

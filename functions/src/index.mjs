@@ -146,7 +146,9 @@ export const api = onRequest(
           res.set("Access-Control-Expose-Headers", "X-Source-URL");
           res.send(source.bytes);
         } else
-          res.json(extractArticle(source.bytes.toString("utf8"), source.url));
+          res.json(
+            await extractArticle(source.bytes.toString("utf8"), source.url),
+          );
         return;
       }
       if (!req.path.endsWith("/ask")) {

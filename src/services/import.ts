@@ -1,5 +1,5 @@
 import type { Reading, Paragraph } from "../reading";
-import { BOOK_DESIGN_COUNT } from "../reading";
+import { BOOK_DESIGN_COUNT, CHUNK_BUDGET } from "../reading";
 import { apiRequest } from "./firebase";
 
 export type ImportProgress = (message: string, fraction?: number) => void;
@@ -100,6 +100,7 @@ const initParser = async (progress: ImportProgress) => {
   const parser = new LiteParse({
     ocrEnabled: true,
     extractBlocks: true,
+    extractImages: true,
     quiet: true,
     maxPages: 401,
     ocrFailureFatal: true,
@@ -156,6 +157,65 @@ const initParser = async (progress: ImportProgress) => {
   };
 };
 
+// Figures must fit one cloud chunk. Re-encode down toward the budget; the
+// final serialized paragraph is gated exactly, never stored half-broken.
+type FigureImage = { bytes: number[]; format: string };
+export const figureParagraph = (
+  image: string,
+  page: number,
+): Paragraph | null => {
+  const paragraph: Paragraph = {
+    text: "(Figure)",
+    explanation: "",
+    image,
+    page,
+  };
+  return new TextEncoder().encode(JSON.stringify(paragraph)).length <=
+    CHUNK_BUDGET
+    ? paragraph
+    : null;
+};
+const fitFigure = async (
+  bytes: number[],
+  format: string,
+): Promise<string | null> => {
+  try {
+    const bitmap = await createImageBitmap(
+      new Blob([new Uint8Array(bytes)], {
+        type: `image/${format === "jpg" ? "jpeg" : format}`,
+      }),
+    );
+    try {
+      const fit =
+        1200 / Math.max(1, Math.max(bitmap.width, bitmap.height));
+      for (const [scale, quality] of [
+        [1, 0.82],
+        [1, 0.6],
+        [0.5, 0.6],
+        [0.5, 0.4],
+      ]) {
+        const ratio = Math.min(1, fit) * scale;
+        const width = Math.max(1, Math.round(bitmap.width * ratio));
+        const height = Math.max(1, Math.round(bitmap.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, width, height);
+        context.drawImage(bitmap, 0, 0, width, height);
+        const url = canvas.toDataURL("image/jpeg", quality);
+        if (url.length <= 350_000) return url;
+      }
+      return null;
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null;
+  }
+};
+
 const parsePdfFile = async (
   parser: Awaited<ReturnType<typeof initParser>>["parser"],
   file: File,
@@ -174,6 +234,8 @@ const parsePdfFile = async (
     const paragraphs: Paragraph[] = [];
     let title = "";
     let heading: string | undefined;
+    let kept = 0;
+    let omitted = 0;
     for (
       let chunk = await batch.nextBatch();
       chunk;
@@ -183,8 +245,35 @@ const parsePdfFile = async (
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
         pageFraction(chunk.endPage, batch.totalPages),
       );
+      const figuresByPage = new Map<number, Map<string, FigureImage>>();
+      for (const image of chunk.result.images ?? []) {
+        if (image.duplicateOf) continue;
+        let figures = figuresByPage.get(image.page);
+        if (!figures) {
+          figures = new Map<string, FigureImage>();
+          figuresByPage.set(image.page, figures);
+        }
+        figures.set(image.id, image);
+      }
       for (const page of chunk.result.pages) {
+        const figures: Map<string, FigureImage> =
+          figuresByPage.get(page.pageNum) ?? new Map();
         for (const block of page.blocks ?? []) {
+          if (block.kind === "figure") {
+            const figure = block.id ? figures.get(block.id) : undefined;
+            const image = figure
+              ? await fitFigure(figure.bytes, figure.format)
+              : null;
+            const paragraph =
+              image && kept < 80
+                ? figureParagraph(image, page.pageNum)
+                : null;
+            if (paragraph) {
+              kept++;
+              paragraphs.push(paragraph);
+            } else omitted++;
+            continue;
+          }
           const raw = (
             block.text ||
             block.lines?.join("\n") ||
@@ -224,11 +313,15 @@ const parsePdfFile = async (
       }
     }
     if (!paragraphs.length)
-      throw new Error("No readable text was found in this PDF.");
+      throw new Error("No readable text or figures were found in this PDF.");
     return completeReading({
       title: title || file.name.replace(/\.pdf$/i, ""),
       author: "PDF",
-      description: `${batch.totalPages} pages`,
+      description:
+        `${batch.totalPages} pages` +
+        (omitted
+          ? ` · ${omitted} figure${omitted === 1 ? "" : "s"} omitted`
+          : ""),
       kind: "pdf",
       location: file.name,
       paragraphs,
