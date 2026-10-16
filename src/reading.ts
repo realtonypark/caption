@@ -3,6 +3,7 @@ export interface Paragraph {
   explanation: string;
   heading?: string;
   page?: number;
+  image?: string;
 }
 export interface Reading {
   id: string;

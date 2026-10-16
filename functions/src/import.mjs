@@ -128,8 +128,27 @@ export const extractArticle = (html, url) => {
   );
   const paragraphs = [];
   let heading;
-  for (const element of clean.querySelectorAll("h1,h2,h3,h4,p,li,pre,table")) {
+  let kept = 0;
+  let omitted = 0;
+  for (const element of clean.querySelectorAll(
+    "h1,h2,h3,h4,p,li,pre,table,img",
+  )) {
     if (element.parentElement?.closest("li,pre,table")) continue;
+    if (element.tagName === "IMG") {
+      const src = element.getAttribute("src") ?? "";
+      if (!src || src.startsWith("data:")) continue;
+      if (kept >= 80) {
+        omitted++;
+        continue;
+      }
+      kept++;
+      paragraphs.push({
+        text: "(Figure)",
+        explanation: "",
+        image: new URL(src, url).href,
+      });
+      continue;
+    }
     const text = element.textContent.replace(/\s+/g, " ").trim();
     if (!text) continue;
     if (/^H\d$/.test(element.tagName)) {
@@ -152,7 +171,9 @@ export const extractArticle = (html, url) => {
       0,
       160,
     ),
-    description: (article.excerpt || "").slice(0, 400),
+    description:
+      (article.excerpt || "").slice(0, 400) +
+      (omitted ? ` · ${omitted} figures omitted` : ""),
     location: url,
     paragraphs,
   };

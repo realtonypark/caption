@@ -52,3 +52,22 @@ test("extracts article text and headings without evaluating source scripts", () 
     article.paragraphs.every((p) => !p.text.includes("Do not execute")),
   );
 });
+
+test("keeps article images as figure paragraphs with absolute URLs", () => {
+  const source =
+    "<html><head><title>With figures</title></head><body><article><h1>With figures</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="/files/map.png" alt="A map"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = extractArticle(source, "https://example.com/article");
+  assert.deepEqual(
+    article.paragraphs.map((p) => p.image ?? null),
+    [null, "https://example.com/files/map.png", null],
+  );
+  assert.equal(article.paragraphs[1].text, "(Figure)");
+});

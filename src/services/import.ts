@@ -78,6 +78,7 @@ const initParser = async (progress: ImportProgress) => {
   const parser = new LiteParse({
     ocrEnabled: true,
     extractBlocks: true,
+    extractImages: true,
     quiet: true,
     maxPages: 401,
     ocrFailureFatal: true,
@@ -134,6 +135,49 @@ const initParser = async (progress: ImportProgress) => {
   };
 };
 
+// Figures must fit one cloud chunk (500 KB). Re-encode down until they do;
+// figures that still do not fit are omitted, never stored half-broken.
+const fitFigure = async (
+  bytes: number[],
+  format: string,
+): Promise<string | null> => {
+  try {
+    const bitmap = await createImageBitmap(
+      new Blob([new Uint8Array(bytes)], {
+        type: `image/${format === "jpg" ? "jpeg" : format}`,
+      }),
+    );
+    try {
+      const fit =
+        1200 / Math.max(1, Math.max(bitmap.width, bitmap.height));
+      for (const [scale, quality] of [
+        [1, 0.82],
+        [1, 0.6],
+        [0.5, 0.6],
+        [0.5, 0.4],
+      ]) {
+        const ratio = Math.min(1, fit) * scale;
+        const width = Math.max(1, Math.round(bitmap.width * ratio));
+        const height = Math.max(1, Math.round(bitmap.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, width, height);
+        context.drawImage(bitmap, 0, 0, width, height);
+        const url = canvas.toDataURL("image/jpeg", quality);
+        if (url.length <= 350_000) return url;
+      }
+      return null;
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null;
+  }
+};
+
 const parsePdfFile = async (
   parser: Awaited<ReturnType<typeof initParser>>["parser"],
   file: File,
@@ -152,6 +196,8 @@ const parsePdfFile = async (
     const paragraphs: Paragraph[] = [];
     let title = "";
     let heading: string | undefined;
+    let kept = 0;
+    let omitted = 0;
     for (
       let chunk = await batch.nextBatch();
       chunk;
@@ -162,7 +208,30 @@ const parsePdfFile = async (
         chunk.endPage / batch.totalPages,
       );
       for (const page of chunk.result.pages) {
+        const figures = new Map(
+          (chunk.result.images ?? [])
+            .filter(
+              (image) => image.page === page.pageNum && !image.duplicateOf,
+            )
+            .map((image) => [image.id, image]),
+        );
         for (const block of page.blocks ?? []) {
+          if (block.kind === "figure") {
+            const figure = block.id ? figures.get(block.id) : undefined;
+            const image = figure
+              ? await fitFigure(figure.bytes, figure.format)
+              : null;
+            if (image && kept < 80) {
+              kept++;
+              paragraphs.push({
+                text: "(Figure)",
+                explanation: "",
+                image,
+                page: page.pageNum,
+              });
+            } else omitted++;
+            continue;
+          }
           const raw = (
             block.text ||
             block.lines?.join("\n") ||
@@ -206,7 +275,11 @@ const parsePdfFile = async (
     return completeReading({
       title: title || file.name.replace(/\.pdf$/i, ""),
       author: "PDF",
-      description: `${batch.totalPages} pages`,
+      description:
+        `${batch.totalPages} pages` +
+        (omitted
+          ? ` · ${omitted} figure${omitted === 1 ? "" : "s"} omitted`
+          : ""),
       kind: "pdf",
       location: file.name,
       paragraphs,
