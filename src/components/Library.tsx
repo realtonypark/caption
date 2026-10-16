@@ -8,6 +8,7 @@ export const Library = ({
   onAdd,
   onOpen,
   onRename,
+  onShelf,
   progress,
   onRemove,
 }: {
@@ -19,11 +20,21 @@ export const Library = ({
   ) => void | Promise<void>;
   onOpen: (id: string, book: HTMLButtonElement) => void;
   onRename: (id: string) => void;
+  onShelf: (id: string, shelf: string | undefined) => void;
   progress?: string;
   onRemove?: (id: string) => void;
 }) => {
   const tutorials = readings.filter(isTutorial);
   const mine = readings.filter((reading) => !isTutorial(reading));
+  const shelfOf = (reading: Reading) => reading.shelf?.trim() || "";
+  const shelves = [...new Set(mine.map(shelfOf).filter(Boolean))];
+  const groups = [
+    { name: "", books: mine.filter((reading) => !shelfOf(reading)) },
+    ...shelves.map((name) => ({
+      name,
+      books: mine.filter((reading) => shelfOf(reading) === name),
+    })),
+  ].filter((group) => group.books.length);
   return (
     <main id="main" className="library-page">
       <SourceInput onAdd={onAdd} />
@@ -60,18 +71,27 @@ export const Library = ({
             {mine.length} {mine.length === 1 ? "reading" : "readings"}
           </span>
         </div>
-        {mine.length ? (
-          <ul className="book-stack">
-            {mine.map((reading) => (
-              <Book
-                key={reading.id}
-                reading={reading}
-                onOpen={(book) => onOpen(reading.id, book)}
-                onRename={() => onRename(reading.id)}
-                onRemove={onRemove ? () => onRemove(reading.id) : undefined}
-              />
-            ))}
-          </ul>
+        {groups.length ? (
+          groups.map((group) => (
+            <section key={group.name} aria-label={`${group.name || "General"} shelf`}>
+              {groups.length > 1 && (
+                <h3 className="shelf-name">{group.name || "General"}</h3>
+              )}
+              <ul className="book-stack">
+                {group.books.map((reading) => (
+                  <Book
+                    key={reading.id}
+                    reading={reading}
+                    shelves={shelves}
+                    onOpen={(book) => onOpen(reading.id, book)}
+                    onRename={() => onRename(reading.id)}
+                    onRemove={onRemove ? () => onRemove(reading.id) : undefined}
+                    onShelf={(shelf) => onShelf(reading.id, shelf)}
+                  />
+                ))}
+              </ul>
+            </section>
+          ))
         ) : (
           <p className="empty-library">
             A link or a PDF is all it takes to start your shelf.

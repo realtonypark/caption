@@ -13,6 +13,7 @@ export interface Reading {
   location?: string;
   design: number;
   paragraphs: Paragraph[];
+  shelf?: string;
   addedAt?: number;
   updatedAt?: number;
 }
@@ -694,20 +695,25 @@ export const notepadMarkdown = (state: LibraryState): string =>
         `### ${passageLabel(insight.passage)}`,
         `> ${insight.passage.quote.replace(/\n/g, "\n> ")}`,
         insight.note ? `Note: ${insight.note}` : "",
-        ...insight.exchanges.map((exchange) =>
-          [
-            `Question: ${exchange.question}\n\n${exchange.answer}`,
-            exchange.paragraphs.length
-              ? `Citations: ${exchange.paragraphs.map((number) => `¶${number}`).join(", ")}`
-              : "",
-            ...(exchange.sources ?? []).map(
-              (source) => `- [${source.title || source.url}](${source.url})`,
-            ),
-            exchange.model ? `Model: ${exchange.model}` : "",
-          ]
-            .filter(Boolean)
-            .join("\n\n"),
-        ),
+        ...insight.exchanges
+          .filter((exchange) => exchange.status !== "pending")
+          .map((exchange) =>
+            [
+              `Question: ${exchange.question}\n\n${exchange.answer}`,
+              exchange.status === "error" && exchange.error
+                ? `Unfinished: ${exchange.error}`
+                : "",
+              exchange.paragraphs.length
+                ? `Citations: ${exchange.paragraphs.map((number) => `¶${number}`).join(", ")}`
+                : "",
+              ...(exchange.sources ?? []).map(
+                (source) => `- [${source.title || source.url}](${source.url})`,
+              ),
+              exchange.model ? `Model: ${exchange.model}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n\n"),
+          ),
       ]),
     ]),
   ]

@@ -3,14 +3,18 @@ import type { Reading } from "../reading";
 import { Icon } from "./Icon";
 export const Book = ({
   reading,
+  shelves = [],
   onOpen,
   onRename,
   onRemove,
+  onShelf,
 }: {
   reading: Reading;
+  shelves?: string[];
   onOpen: (book: HTMLButtonElement) => void;
   onRename?: () => void;
   onRemove?: () => void;
+  onShelf?: (shelf: string | undefined) => void;
 }) => {
   const contextId = useId();
   return (
@@ -42,8 +46,46 @@ export const Book = ({
           {reading.author}. {reading.description}
         </span>
       </button>
-      {(onRename || onRemove) && (
+      {(onRename || onRemove || onShelf) && (
         <div className="book-actions">
+          {onShelf && (
+            <select
+              className="book-shelf"
+              aria-label={`Shelf for ${reading.title}`}
+              value={reading.shelf ?? ""}
+              onChange={(event) => {
+                const input = event.currentTarget;
+                if (input.value !== "__new") {
+                  onShelf(input.value || undefined);
+                  return;
+                }
+                const shelf = window.prompt("Name this shelf");
+                if (shelf === null) {
+                  input.value = reading.shelf ?? "";
+                  return;
+                }
+                if (!shelf.trim()) {
+                  window.alert("A shelf needs a name.");
+                  input.value = reading.shelf ?? "";
+                  return;
+                }
+                onShelf(shelf.trim().slice(0, 80));
+              }}
+            >
+              <option value="">General</option>
+              {shelves
+                .filter((shelf) => shelf !== reading.shelf)
+                .map((shelf) => (
+                  <option key={shelf} value={shelf}>
+                    {shelf}
+                  </option>
+                ))}
+              {reading.shelf && (
+                <option value={reading.shelf}>{reading.shelf}</option>
+              )}
+              <option value="__new">New shelf…</option>
+            </select>
+          )}
           {onRename && (
             <button
               type="button"

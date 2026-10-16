@@ -2,45 +2,64 @@ import {
   notepadMarkdown,
   notepadGroups,
   passageLabel,
+  readingInsights,
   type LibraryState,
 } from "../reading";
-import { readingPath } from "../routing";
+import { readingPath, useRoute } from "../routing";
 import { ExchangeView } from "./ExchangeView";
 import { Icon } from "./Icon";
 import { Link } from "./Link";
 
 export const Notepad = ({ state }: { state: LibraryState }) => {
-  const groups = notepadGroups(state);
+  const route = useRoute();
+  const readingId = new URLSearchParams(route.split("?")[1]).get("reading");
+  const reading = state.readings.find((item) => item.id === readingId);
+  const shown: LibraryState = reading
+    ? {
+        readings: [reading],
+        insights: readingInsights(state, reading.id),
+      }
+    : state;
+  const groups = notepadGroups(shown);
   return (
     <main id="main" className="notepad-page">
-      <header className="notepad-header">
-        <div className="eyebrow">A place for what stays with you</div>
-        <h1>Your Notepad</h1>
-        {groups.length > 0 && (
-          <button
-            type="button"
-            className="paper-button export-notepad"
-            onClick={() => {
-              const url = URL.createObjectURL(
-                new Blob([notepadMarkdown(state)], {
-                  type: "text/markdown;charset=utf-8",
-                }),
-              );
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = "caption-notepad.md";
-              link.click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }}
-          >
-            Export notes
-          </button>
-        )}
-        <p>
-          Highlights, questions, and little moments of understanding.
-          <br /> Kept together, with the pages they came from.
-        </p>
-      </header>
+      <div className="notepad-band">
+        <header className="notepad-header">
+          <div className="eyebrow">A place for what stays with you</div>
+          <h1>Your Notepad</h1>
+          {reading && (
+            <p className="notepad-context">
+              Notes from {reading.title} ·{" "}
+              <Link href={readingPath(reading.id)}>Back to reading</Link> ·{" "}
+              <Link href="/notepad">All notes</Link>
+            </p>
+          )}
+          {groups.length > 0 && (
+            <button
+              type="button"
+              className="paper-button export-notepad"
+              onClick={() => {
+                const url = URL.createObjectURL(
+                  new Blob([notepadMarkdown(shown)], {
+                    type: "text/markdown;charset=utf-8",
+                  }),
+                );
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "caption-notepad.md";
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              }}
+            >
+              Export notes
+            </button>
+          )}
+          <p>
+            Highlights, questions, and little moments of understanding.
+            <br /> Kept together, with the pages they came from.
+          </p>
+        </header>
+      </div>
       {!groups.length ? (
         <section className="notepad-empty">
           <Icon name="notepad" />

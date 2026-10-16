@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 export const Header = ({
   current,
   account,
+  notepadHref = "/notepad",
 }: {
   current: "library" | "reading" | "notepad" | "models";
   account?: ReactNode;
+  notepadHref?: string;
 }) => (
   <header className="site-header flex items-center justify-between">
     <a className="skip-link" href="#main">
@@ -49,7 +51,7 @@ export const Header = ({
         <span>Library</span>
       </Link>
       <Link
-        href="/notepad"
+        href={notepadHref}
         aria-current={current === "notepad" ? "page" : undefined}
         className="nav-link flex items-center gap-2"
       >

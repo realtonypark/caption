@@ -15,6 +15,7 @@ it("keeps tutorials on a protected shelf and actions on user readings", () => {
       onAdd={vi.fn()}
       onOpen={vi.fn()}
       onRename={onRename}
+      onShelf={vi.fn()}
       onRemove={vi.fn()}
     />,
   );
@@ -28,4 +29,35 @@ it("keeps tutorials on a protected shelf and actions on user readings", () => {
   expect(
     screen.getByRole("button", { name: `Remove ${mine.title}` }),
   ).toBeInTheDocument();
+});
+
+it("groups user readings by shelf and re-shelves from the book row", () => {
+  const general = makePreview("pdf-1", "pdf", "a.pdf", 0);
+  const shelved = {
+    ...makePreview("pdf-2", "pdf", "b.pdf", 1),
+    shelf: "Papers",
+  };
+  const onShelf = vi.fn();
+  render(
+    <Library
+      readings={[general, shelved]}
+      onAdd={vi.fn()}
+      onOpen={vi.fn()}
+      onRename={vi.fn()}
+      onShelf={onShelf}
+      onRemove={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("heading", { name: "General" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Papers" })).toBeInTheDocument();
+  fireEvent.change(
+    screen.getByRole("combobox", { name: `Shelf for ${general.title}` }),
+    { target: { value: "Papers" } },
+  );
+  expect(onShelf).toHaveBeenCalledWith(general.id, "Papers");
+  fireEvent.change(
+    screen.getByRole("combobox", { name: `Shelf for ${shelved.title}` }),
+    { target: { value: "" } },
+  );
+  expect(onShelf).toHaveBeenCalledWith(shelved.id, undefined);
 });

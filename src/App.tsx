@@ -171,6 +171,11 @@ export const App = () => {
       <Header
         current={current}
         account={<AccountMenu user={user} status={status} />}
+        notepadHref={
+          current === "reading" && reading
+            ? `/notepad?reading=${encodeURIComponent(reading.id)}`
+            : "/notepad"
+        }
       />
       {warning && (
         <p className="storage-warning" role="status">
@@ -206,6 +211,17 @@ export const App = () => {
                   ? { ...reading, title: title.trim().slice(0, 500) }
                   : reading,
               ),
+            }));
+          }}
+          onShelf={(id, shelf) => {
+            updateLibrary((previous) => ({
+              ...previous,
+              readings: previous.readings.map((reading) => {
+                if (reading.id !== id) return reading;
+                const next = { ...reading, shelf };
+                if (next.shelf === undefined) delete next.shelf;
+                return next;
+              }),
             }));
           }}
           onRemove={(id) => {

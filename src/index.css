@@ -105,6 +105,9 @@ ul {
   background: #faf8f2;
   color: #302d28;
 }
+.app {
+  overflow-x: clip;
+}
 .site-header {
   min-height: 104px;
   padding: 25px 42px;
@@ -1563,18 +1566,35 @@ ul {
   margin: 48px auto 0;
   padding-bottom: 35px;
 }
+.notepad-band {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  background: #211a17;
+}
 .notepad-header {
-  padding-bottom: 52px;
+  width: min(100% - 96px, 880px);
+  margin: 0 auto;
+  padding: 56px 0 52px;
+  color: #dfd2bb;
+}
+.notepad-header .eyebrow {
+  color: #a59788;
 }
 .notepad-header h1 {
   font-size: 69px;
   line-height: 1.1;
   margin: 16px 0 18px;
+  color: #f3efe6;
 }
 .notepad-header > p {
   font-size: 14px;
   line-height: 1.9;
-  color: #918877;
+  color: #a59788;
+}
+.notepad-context a {
+  color: #f3efe6;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .notepad-empty {
   margin: 12px 0 0;
@@ -2040,6 +2060,25 @@ ul {
 .book-actions button:hover {
   background: #ffffff12;
   color: #eee7d8;
+}
+.book-shelf {
+  max-width: 160px;
+  margin-right: auto;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #b2aca0;
+  background: transparent;
+  border: 1px solid #ffffff22;
+  border-radius: 6px;
+}
+.book-shelf:hover {
+  color: #eee7d8;
+  border-color: #ffffff44;
+}
+.shelf-name {
+  font-size: 20px;
+  color: #a59788;
+  margin-bottom: 51px;
 }
 .export-notepad {
   margin: 20px 0 0;

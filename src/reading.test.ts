@@ -5,6 +5,7 @@ import {
   initialLibrary,
   mergeLibraries,
   normalizeLink,
+  notepadMarkdown,
   orderReadingsByAddedAt,
   SAMPLE_READINGS,
   answerThreads,
@@ -378,3 +379,55 @@ it("composes a containing highlight with a nested answer without losing either a
   expect(segments.map((segment) => segment.text).join("")).toBe(outer.quote);
 });
 
+
+it("exports finished answers, skips streaming ones, and names interruptions", () => {
+  const initial = emptyLibrary();
+  const reading = initial.readings[0];
+  const passage = wholeParagraph(reading, 0);
+  const state = saveInsight(
+    saveInsight(
+      initial,
+      reading.id,
+      passage,
+      {
+        note: "Kept",
+        exchange: {
+          question: "Done?",
+          answer: "Yes.",
+          paragraphs: [1],
+          threadId: "done",
+        },
+      },
+      "saved",
+    ),
+    reading.id,
+    passage,
+    {
+      exchange: {
+        question: "Streaming?",
+        answer: "",
+        paragraphs: [],
+        threadId: "live",
+        status: "pending",
+      },
+    },
+    "saved",
+  );
+  const markdown = notepadMarkdown(state);
+  expect(markdown).toContain("Question: Done?");
+  expect(markdown).toContain("Citations: ¶1");
+  expect(markdown).not.toContain("Streaming?");
+  const interrupted = saveInsight(state, reading.id, passage, {
+    exchange: {
+      question: "Broken?",
+      answer: "Half an",
+      paragraphs: [],
+      threadId: "broken",
+      status: "error",
+      error: "Answer stopped. You can try again.",
+    },
+  }, "saved");
+  expect(notepadMarkdown(interrupted)).toContain(
+    "Unfinished: Answer stopped. You can try again.",
+  );
+});
