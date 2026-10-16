@@ -1,0 +1,28 @@
+src/components/Icon.tsx
+  h_05e5164a29872e 25,51
+src/components/QuestionComposer.test.tsx
+  h_05e5164a29872e 1-27
+src/components/QuestionComposer.tsx
+  h_05e5164a29872e 8,13,67-86
+src/components/Reader.test.tsx
+  h_05e5164a29872e 255,265,323,426
+src/components/Reader.tsx
+  h_05e5164a29872e 406-416,519-523
+src/components/SelectionLens.test.tsx
+  h_05e5164a29872e 1-67
+src/components/SelectionLens.tsx
+  h_05e5164a29872e 10,292,299,302-348,388-401
+src/index.css
+  h_05e5164a29872e 649-658,1147-1151,1153-1183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20b950ac5ea7d4a7bbb534db40349ce39913adb5",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
