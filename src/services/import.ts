@@ -293,7 +293,7 @@ const parsePdfFile = async (
       }
     }
     if (!paragraphs.length)
-      throw new Error("No readable text was found in this PDF.");
+      throw new Error("No readable text or figures were found in this PDF.");
     return completeReading({
       title: title || file.name.replace(/\.pdf$/i, ""),
       author: "PDF",
