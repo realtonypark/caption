@@ -1,0 +1,16 @@
+functions/src/import.mjs
+  h_05e5164a29872e 139-152
+functions/src/import.test.mjs
+  h_05e5164a29872e 75-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "00033e99257e3619554266a6f7bbd06cde34ce2f",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
