@@ -4,10 +4,12 @@ import { Icon } from "./Icon";
 export const Book = ({
   reading,
   onOpen,
+  onRename,
   onRemove,
 }: {
   reading: Reading;
   onOpen: (book: HTMLButtonElement) => void;
+  onRename?: () => void;
   onRemove?: () => void;
 }) => {
   const contextId = useId();
@@ -40,15 +42,27 @@ export const Book = ({
           {reading.author}. {reading.description}
         </span>
       </button>
-      {onRemove && (
-        <button
-          type="button"
-          className="remove-book"
-          aria-label={`Remove ${reading.title}`}
-          onClick={onRemove}
-        >
-          <Icon name="trash" />
-        </button>
+      {(onRename || onRemove) && (
+        <div className="book-actions">
+          {onRename && (
+            <button
+              type="button"
+              aria-label={`Rename ${reading.title}`}
+              onClick={onRename}
+            >
+              <Icon name="pen" />
+            </button>
+          )}
+          {onRemove && (
+            <button
+              type="button"
+              aria-label={`Remove ${reading.title}`}
+              onClick={onRemove}
+            >
+              <Icon name="trash" />
+            </button>
+          )}
+        </div>
       )}
     </li>
   );
