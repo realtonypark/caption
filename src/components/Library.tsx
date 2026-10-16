@@ -10,20 +10,28 @@ export const Library = ({
 }: {
   readings: Reading[];
   onAdd: (
-    kind: "link" | "pdf",
+    kind: "link" | "file",
     label: string,
-    file?: File,
+    files?: File[],
   ) => void | Promise<void>;
   onOpen: (id: string, book: HTMLButtonElement) => void;
-  progress?: string;
+  progress?: { message: string; fraction?: number };
   onRemove?: (id: string) => void;
 }) => (
   <main id="main" className="library-page">
     <SourceInput onAdd={onAdd} />
-    {progress && (
+    {progress?.message && (
       <p className="import-progress" role="status">
-        {progress}
+        {progress.message}
       </p>
+    )}
+    {progress?.fraction !== undefined && (
+      <progress
+        className="import-bar"
+        value={progress.fraction}
+        max={1}
+        aria-label="Import progress"
+      />
     )}
     <section className="shelf" aria-labelledby="library-title">
       <div className="shelf-heading flex items-baseline justify-between">

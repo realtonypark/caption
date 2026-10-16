@@ -9,7 +9,7 @@ export interface Reading {
   title: string;
   author: string;
   description: string;
-  kind: "sample" | "link" | "pdf";
+  kind: "sample" | "link" | "pdf" | "text";
   location?: string;
   design: number;
   paragraphs: Paragraph[];

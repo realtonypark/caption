@@ -5,9 +5,9 @@ export const SourceInput = ({
   onAdd,
 }: {
   onAdd: (
-    kind: "link" | "pdf",
+    kind: "link" | "file",
     label: string,
-    file?: File,
+    files?: File[],
   ) => void | Promise<void>;
 }) => {
   const [link, setLink] = useState("");
@@ -68,21 +68,22 @@ export const SourceInput = ({
         <div className="source-file-row flex items-center justify-between">
           <label className="file-picker flex items-center gap-2">
             <Icon name="file" />
-            <span>Or choose a PDF</span>
+            <span>Or choose PDFs or text files</span>
             <input
               type="file"
-              accept=".pdf,application/pdf"
+              accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+              multiple
               disabled={busy}
-              aria-label="Choose a PDF"
+              aria-label="Choose files"
               aria-invalid={!!pdfError}
               aria-describedby={
                 pdfError ? "source-pdf-error source-hint" : "source-hint"
               }
               onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                if (!/\.pdf$/i.test(file.name)) {
-                  setPdfError("Choose a PDF file.");
+                const files = Array.from(event.target.files ?? []);
+                if (!files.length) return;
+                if (!files.every((file) => /\.(pdf|txt|md)$/i.test(file.name))) {
+                  setPdfError("Choose PDF or text files.");
                   event.target.value = "";
                   return;
                 }
@@ -90,12 +91,16 @@ export const SourceInput = ({
                 const input = event.currentTarget;
                 setBusy(true);
                 try {
-                  await onAdd("pdf", file.name, file);
+                  await onAdd(
+                    "file",
+                    files.map((file) => file.name).join(", "),
+                    files,
+                  );
                 } catch (error) {
                   setPdfError(
                     error instanceof Error
                       ? error.message
-                      : "Could not read this PDF.",
+                      : "Could not read these files.",
                   );
                 } finally {
                   setBusy(false);

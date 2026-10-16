@@ -2,6 +2,17 @@ import type { Reading, Paragraph } from "../reading";
 import { BOOK_DESIGN_COUNT } from "../reading";
 import { apiRequest } from "./firebase";
 
+export type ImportProgress = (message: string, fraction?: number) => void;
+
+// PDF text blocks carry hard line breaks from the page layout. Collapse them
+// so a sentence reads as one sentence; tables and code keep their lines.
+export const cleanBlockText = (text: string): string =>
+  text
+    .replace(/(\p{L})-\s*\n\s*(\p{L})/gu, "$1$2")
+    .replace(/\s*\n\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
   const characters = source.paragraphs.reduce(
     (total, paragraph) =>
@@ -27,7 +38,7 @@ const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
 };
 export const importLink = async (
   url: string,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   progress("Opening the source…");
   const response = await apiRequest("import", { url });
@@ -53,12 +64,7 @@ export const importLink = async (
   return completeReading({ ...source, kind: "link" });
 };
 
-export const importPdf = async (
-  file: File,
-  progress: (message: string) => void,
-): Promise<Reading> => {
-  if (file.size > 25_000_000)
-    throw new Error("Choose a PDF smaller than 25 MB.");
+const initParser = async (progress: ImportProgress) => {
   progress("Preparing the PDF…");
   const [{ default: init, LiteParse }, { default: wasmUrl }] =
     await Promise.all([
@@ -119,6 +125,22 @@ export const importPdf = async (
       },
     },
   });
+  return {
+    parser,
+    free: async () => {
+      parser.free();
+      await worker?.terminate();
+    },
+  };
+};
+
+const parsePdfFile = async (
+  parser: Awaited<ReturnType<typeof initParser>>["parser"],
+  file: File,
+  progress: ImportProgress,
+): Promise<Reading> => {
+  if (file.size > 25_000_000)
+    throw new Error("Choose a PDF smaller than 25 MB.");
   let batch;
   try {
     batch = await parser.openBatchSession(
@@ -137,10 +159,11 @@ export const importPdf = async (
     ) {
       progress(
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
+        chunk.endPage / batch.totalPages,
       );
       for (const page of chunk.result.pages) {
         for (const block of page.blocks ?? []) {
-          const text = (
+          const raw = (
             block.text ||
             block.lines?.join("\n") ||
             (block.rows
@@ -149,6 +172,13 @@ export const importPdf = async (
                   .join("\n")
               : "")
           ).trim();
+          if (!raw) continue;
+          const text =
+            block.kind === "table" ||
+            block.kind === "code" ||
+            block.kind === "grid_fallback"
+              ? raw
+              : cleanBlockText(raw);
           if (!text) continue;
           if (block.kind === "heading") {
             if (
@@ -190,7 +220,78 @@ export const importPdf = async (
     throw error;
   } finally {
     batch?.free();
-    parser.free();
-    await worker?.terminate();
   }
+};
+
+export const importPdf = async (
+  file: File,
+  progress: ImportProgress,
+): Promise<Reading> => {
+  const { parser, free } = await initParser(progress);
+  try {
+    return await parsePdfFile(parser, file, progress);
+  } finally {
+    await free();
+  }
+};
+
+export const importText = async (file: File): Promise<Reading> => {
+  if (file.size > 5_000_000)
+    throw new Error("Choose a text file smaller than 5 MB.");
+  const paragraphs = (await file.text())
+    .split(/\n\s*\n/)
+    .map((text) => text.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .map((text) => ({ text, explanation: "" }));
+  if (!paragraphs.length)
+    throw new Error("No readable text was found in this file.");
+  return completeReading({
+    title: file.name.replace(/\.(txt|md)$/i, ""),
+    author: "Text file",
+    description: "Plain text",
+    kind: "text",
+    location: file.name,
+    paragraphs,
+  });
+};
+
+export const importFiles = async (
+  files: File[],
+  progress: ImportProgress,
+): Promise<{ readings: Reading[]; failures: string[] }> => {
+  if (!files.length) throw new Error("Choose at least one file.");
+  const unknown = files.filter((file) => !/\.(pdf|txt|md)$/i.test(file.name));
+  if (unknown.length)
+    throw new Error(
+      `These files are not supported: ${unknown.map((file) => file.name).join(", ")}.`,
+    );
+  // One tag for direct and OCR callbacks alike: the parser outlives each file.
+  let tag = "";
+  const dynamic: ImportProgress = (message, fraction) =>
+    progress(`${tag}${message}`, fraction);
+  const { parser, free } = files.some((file) => /\.pdf$/i.test(file.name))
+    ? await initParser(dynamic)
+    : { parser: undefined, free: async () => {} };
+  const readings: Reading[] = [];
+  const failures: string[] = [];
+  try {
+    for (const [index, file] of files.entries()) {
+      tag = files.length > 1 ? `File ${index + 1} of ${files.length} · ` : "";
+      try {
+        readings.push(
+          /\.pdf$/i.test(file.name)
+            ? await parsePdfFile(parser!, file, dynamic)
+            : await importText(file),
+        );
+      } catch (error) {
+        failures.push(
+          `${file.name}: ${error instanceof Error ? error.message : "Could not be imported."}`,
+        );
+      }
+    }
+  } finally {
+    await free();
+  }
+  if (!readings.length) throw new Error(failures.join(" "));
+  return { readings, failures };
 };

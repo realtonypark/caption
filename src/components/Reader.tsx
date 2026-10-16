@@ -395,7 +395,9 @@ export const Reader = ({
                   ? "Sample reading"
                   : reading.kind === "pdf"
                     ? "PDF reading"
-                    : "Web reading"}
+                    : reading.kind === "text"
+                      ? "Text reading"
+                      : "Web reading"}
               </span>
             </div>
             <h1 tabIndex={-1}>{reading.title}</h1>

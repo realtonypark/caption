@@ -3,7 +3,7 @@
 `reading.ts` owns source models, sample content, passage anchors, library merge rules, and saved insights.
 
 - The initial library has three original sample readings.
-- Public URLs import actual article text through the server. PDF text and OCR are extracted in the browser. Import failures never add sample text in place of the requested source.
+- Public URLs import actual article text through the server. PDF text and OCR are extracted in the browser. Plain-text files import directly. Import failures never add sample text in place of the requested source.
 - Web links accept HTTP(S) URLs and bare hosts, including numeric ports. Bare hosts default to HTTPS; other schemes are rejected.
 - A book design is assigned once when a source is added and stored with that source.
 - A passage consists of exact character ranges in one or more paragraphs.
