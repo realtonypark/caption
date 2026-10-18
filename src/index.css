@@ -664,6 +664,15 @@ ul {
   line-height: 1.95;
   color: #48483e;
 }
+.paragraph-figure {
+  margin: 12px 0 0;
+}
+.paragraph-figure img {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+  background: #fff;
+}
 .paragraph-number {
   position: absolute;
   right: calc(100% + 15px);
@@ -1950,6 +1959,12 @@ ul {
   margin: -32px auto 40px;
   color: #d8d4c7;
 }
+.import-bar {
+  display: block;
+  width: min(100% - 64px, 420px);
+  margin: -28px auto 36px;
+  accent-color: #c1401b;
+}
 .reader-model {
   display: flex;
   align-items: center;
@@ -2043,6 +2058,20 @@ ul {
 }
 .export-notepad {
   margin: 20px 0 0;
+}
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.export-notepad p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+  color: #716d59;
+}
+.export-notepad .export-error {
+  color: #a4412a;
 }
 .exchange-answer > p {
   white-space: pre-wrap;

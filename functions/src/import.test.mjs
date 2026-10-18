@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { publicAddress, checkedUrl, extractArticle } from "./import.mjs";
+import {
+  publicAddress,
+  checkedUrl,
+  extractArticle,
+  googleDocExportUrl,
+  nextHop,
+  filenameFromDisposition,
+} from "./import.mjs";
 
 test("blocks private, mapped, metadata, multicast, and reserved network addresses", async () => {
   for (const address of [
@@ -34,7 +41,7 @@ test("blocks private, mapped, metadata, multicast, and reserved network addresse
   ])
     await assert.rejects(checkedUrl(url), /public/);
 });
-test("extracts article text and headings without evaluating source scripts", () => {
+test("extracts article text and headings without evaluating source scripts", async () => {
   const source =
     "<html><head><title>A real article</title></head><body><nav>Menu</nav><article><h1>A real article</h1><p>" +
     "The city relies on reliable connections and ordinary maintenance. ".repeat(
@@ -45,10 +52,160 @@ test("extracts article text and headings without evaluating source scripts", () 
       10,
     ) +
     '</p><script>throw new Error("Do not execute source HTML")</script></article></body></html>';
-  const article = extractArticle(source, "https://example.com/article");
+  const article = await extractArticle(source, "https://example.com/article");
   assert.equal(article.title, "A real article");
   assert.ok(article.paragraphs.some((p) => p.heading === "Everyday access"));
   assert.ok(
     article.paragraphs.every((p) => !p.text.includes("Do not execute")),
+  );
+});
+
+test("embeds remote article images as data URLs at import", async () => {
+  const source =
+    "<html><head><title>With figures</title></head><body><article><h1>With figures</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="/files/map.png" alt="A map"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(
+    source,
+    "https://example.com/article",
+    async (absolute) => {
+      assert.equal(absolute, "https://example.com/files/map.png");
+      return { bytes: Buffer.from("map-bytes"), type: "image/png" };
+    },
+  );
+  assert.deepEqual(
+    article.paragraphs.map((p) => p.image ?? null),
+    [null, `data:image/png;base64,${Buffer.from("map-bytes").toString("base64")}`, null],
+  );
+  assert.equal(article.paragraphs[1].text, "(Figure)");
+});
+
+test("keeps small embedded images and counts oversized ones", async () => {
+  const tiny =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const source =
+    "<html><head><title>Embedded</title></head><body><article><h1>Embedded</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    `</p><img src="${tiny}" alt="Tiny"><img src="data:image/png;base64,${"A".repeat(400_000)}"><p>` +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(source, "https://example.com/article");
+  assert.deepEqual(
+    article.paragraphs.map((p) => p.image ?? null),
+    [null, tiny, null],
+  );
+  assert.match(article.description, /1 figures omitted/);
+});
+
+test("omits article images when the image fetch fails", async () => {
+  const source =
+    "<html><head><title>Private</title></head><body><article><h1>Private</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="https://intranet.test/map.png"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(
+    source,
+    "https://example.com/article",
+    async () => {
+      throw new Error("Private network addresses cannot be imported.");
+    },
+  );
+  assert.ok(article.paragraphs.every((p) => !p.image));
+  assert.match(article.description, /1 figures omitted/);
+});
+
+test("omits non-web article image schemes", async () => {
+  const source =
+    "<html><head><title>Schemes</title></head><body><article><h1>Schemes</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="ftp://example.com/map.png"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(source, "https://example.com/article");
+  assert.ok(article.paragraphs.every((p) => !p.image));
+  assert.match(article.description, /1 figures omitted/);
+});
+
+test("skips malformed article images without failing the import", async () => {
+  const source =
+    "<html><head><title>Bad figure</title></head><body><article><h1>Bad figure</h1><p>" +
+    "The city relies on reliable connections and ordinary maintenance. ".repeat(
+      10,
+    ) +
+    '</p><img src="https://"><p>' +
+    "Services matter when people can reach them safely and dependably. ".repeat(
+      10,
+    ) +
+    "</p></article></body></html>";
+  const article = await extractArticle(source, "https://example.com/article");
+  assert.ok(article.paragraphs.every((p) => !p.image));
+  assert.match(article.description, /1 figures omitted/);
+});
+
+test("turns shared Google Doc links into PDF exports and leaves published pages alone", () => {
+  const exported =
+    "https://docs.google.com/document/d/1AbC-d_9/export?format=pdf";
+  for (const url of [
+    "https://docs.google.com/document/d/1AbC-d_9/edit?usp=sharing",
+    "https://docs.google.com/document/d/1AbC-d_9",
+    "https://docs.google.com/document/u/0/d/1AbC-d_9/edit#heading=h.x",
+  ])
+    assert.equal(googleDocExportUrl(url), exported, url);
+  for (const url of [
+    "https://docs.google.com/document/d/e/2PACX-1vT/pub",
+    "https://docs.google.com/spreadsheets/d/1AbC/edit",
+    "https://example.com/document/d/1AbC/edit",
+    "http://docs.google.com/document/d/1AbC/edit",
+  ])
+    assert.equal(googleDocExportUrl(url), undefined, url);
+});
+test("explains private Google files instead of importing the sign-in page", () => {
+  assert.throws(
+    () =>
+      nextHop(
+        "https://accounts.google.com/ServiceLogin?continue=x",
+        "https://docs.google.com/document/d/1/export?format=pdf",
+      ),
+    /private/,
+  );
+  assert.equal(
+    nextHop("/next", "https://example.com/start"),
+    "https://example.com/next",
+  );
+});
+test("reads a download name from Content-Disposition", () => {
+  assert.equal(
+    filenameFromDisposition(
+      `attachment; filename="Notes.pdf"; filename*=UTF-8''My%20Caf%C3%A9%20Notes.pdf`,
+    ),
+    "My Café Notes.pdf",
+  );
+  assert.equal(
+    filenameFromDisposition('attachment; filename="plain.pdf"'),
+    "plain.pdf",
+  );
+  assert.equal(filenameFromDisposition(null), "");
+  assert.equal(
+    filenameFromDisposition("attachment; filename*=UTF-8''%E0%A4%A"),
+    "",
   );
 });
