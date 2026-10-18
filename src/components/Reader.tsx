@@ -509,6 +509,11 @@ export const Reader = ({
                         ),
                     )}
                   </p>
+                  {paragraph.image && (
+                    <figure className="paragraph-figure">
+                      <img src={paragraph.image} alt="Figure" loading="lazy" />
+                    </figure>
+                  )}
                 </div>
               </section>
             ))}

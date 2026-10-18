@@ -11,7 +11,12 @@ import {
 } from "./reading";
 import { navigate, readingPath, useRoute } from "./routing";
 import { useLibrary } from "./use-library";
-import { importFile, importLink } from "./services/import";
+import {
+  importFiles,
+  importLink,
+  partialFailureMessage,
+  type ImportProgress,
+} from "./services/import";
 import { AccountMenu } from "./components/AccountMenu";
 import { openBook } from "./open-book";
 import { FREE_MODELS } from "./services/ai";
@@ -45,7 +50,12 @@ export const App = () => {
     status,
     loading,
   } = useLibrary();
-  const [progress, setProgress] = useState("");
+  const [progress, setProgress] = useState<{
+    message: string;
+    fraction?: number;
+  }>({ message: "" });
+  const report: ImportProgress = (message, fraction) =>
+    setProgress({ message, fraction });
   const [models, setModels] =
     useState<readonly { id: string; name: string }[]>(FREE_MODELS);
   const [modelOwner, setModelOwner] = useState<string>();
@@ -97,8 +107,8 @@ export const App = () => {
     }
     exampleAttempted.current = owner;
     const attemptOwner = owner;
-    setProgress("Adding the example reading…");
-    void importLink(EXAMPLE_URL, setProgress)
+    setProgress({ message: "Adding the example reading…" });
+    void importLink(EXAMPLE_URL, report)
       .then((reading) => {
         latestLibrary.current.updateLibrary((previous) => {
           if (
@@ -121,14 +131,15 @@ export const App = () => {
             insights: [...previous.insights, ...tutorials],
           };
         });
-        if (exampleAttempted.current === attemptOwner) setProgress("");
+        if (exampleAttempted.current === attemptOwner)
+          setProgress({ message: "" });
       })
       .catch((error: unknown) => {
         if (exampleAttempted.current !== attemptOwner) return;
         exampleAttempted.current = undefined;
-        setProgress(
-          `Could not add the example reading: ${error instanceof Error ? error.message : "The source could not be imported."}`,
-        );
+        setProgress({
+          message: `Could not add the example reading: ${error instanceof Error ? error.message : "The source could not be imported."}`,
+        });
       });
   }, [loading, current, owner]);
   useEffect(() => {
@@ -208,19 +219,36 @@ export const App = () => {
                 ),
               }));
           }}
-          onAdd={async (kind, label, file) => {
+          onAdd={async (input) => {
             try {
-              const reading =
-                kind === "link"
-                  ? await importLink(label, setProgress)
-                  : await importFile(file!, setProgress);
+              if (input.kind === "link") {
+                const reading = await importLink(input.label, report);
+                updateLibrary((previous) => ({
+                  ...previous,
+                  readings: [...previous.readings, reading],
+                }));
+                navigate(readingPath(reading.id));
+                return;
+              }
+              const { readings, failures } = await importFiles(
+                input.files,
+                report,
+              );
               updateLibrary((previous) => ({
                 ...previous,
-                readings: [...previous.readings, reading],
+                readings: [...previous.readings, ...readings],
               }));
-              navigate(readingPath(reading.id));
+              if (failures.length)
+                throw new Error(
+                  partialFailureMessage(
+                    input.files.length,
+                    readings.length,
+                    failures,
+                  ),
+                );
+              navigate(readingPath(readings[0].id));
             } finally {
-              setProgress("");
+              setProgress({ message: "" });
             }
           }}
         />

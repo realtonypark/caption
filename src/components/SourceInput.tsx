@@ -6,12 +6,14 @@ import {
   unsupportedFileMessage,
 } from "../reading";
 import { Icon } from "./Icon";
-export type AddSource = (
-  kind: "link" | "file",
-  label: string,
-  file?: File,
-) => void | Promise<void>;
-export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
+export type SourceAdd =
+  | { kind: "link"; label: string }
+  | { kind: "file"; label: string; files: File[] };
+export const SourceInput = ({
+  onAdd,
+}: {
+  onAdd: (input: SourceAdd) => void | Promise<void>;
+}) => {
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
   const [fileError, setFileError] = useState("");
@@ -22,7 +24,7 @@ export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
       const url = normalizeLink(link);
       setLinkError("");
       setBusy(true);
-      await onAdd("link", url);
+      await onAdd({ kind: "link", label: url });
     } catch (reason) {
       setLinkError(
         reason instanceof Error ? reason.message : "Enter a valid web link.",
@@ -31,18 +33,27 @@ export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
       setBusy(false);
     }
   };
-  const addFile = async (file: File) => {
-    if (!sourceFileKind(file)) {
-      setFileError(unsupportedFileMessage(file.name));
+  const addFiles = async (files: File[]) => {
+    const bad = files.find((file) => !sourceFileKind(file));
+    if (bad) {
+      setFileError(unsupportedFileMessage(bad.name));
       return;
     }
     setFileError("");
     setBusy(true);
     try {
-      await onAdd("file", file.name, file);
+      await onAdd({
+        kind: "file",
+        label: files.map((file) => file.name).join(", "),
+        files,
+      });
     } catch (error) {
       setFileError(
-        error instanceof Error ? error.message : "Could not read this file.",
+        error instanceof Error
+          ? error.message
+          : files.length > 1
+            ? "Could not read these files."
+            : "Could not read this file.",
       );
     } finally {
       setBusy(false);
@@ -55,13 +66,13 @@ export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
       );
       if (!image || busy) return;
       event.preventDefault();
-      void addFile(
+      void addFiles([
         new File(
           [image],
           `Screenshot ${new Date().toLocaleString()}.${image.type.split("/")[1]}`,
           { type: image.type },
         ),
-      );
+      ]);
     };
     document.addEventListener("paste", paste);
     return () => document.removeEventListener("paste", paste);
@@ -105,21 +116,22 @@ export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
         <div className="source-file-row flex items-center justify-between">
           <label className="file-picker flex items-center gap-2">
             <Icon name="file" />
-            <span>Or choose a file</span>
+            <span>Or choose files</span>
             <input
               type="file"
               accept={SOURCE_FILE_ACCEPT}
+              multiple
               disabled={busy}
-              aria-label="Choose a file"
+              aria-label="Choose files"
               aria-invalid={!!fileError}
               aria-describedby={
                 fileError ? "source-file-error source-hint" : "source-hint"
               }
               onChange={async (event) => {
                 const input = event.currentTarget;
-                const file = input.files?.[0];
-                if (!file) return;
-                await addFile(file);
+                const files = Array.from(input.files ?? []);
+                if (!files.length) return;
+                await addFiles(files);
                 input.value = "";
               }}
             />

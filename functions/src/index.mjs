@@ -151,7 +151,9 @@ export const api = onRequest(
           );
           res.send(source.bytes);
         } else
-          res.json(extractArticle(source.bytes.toString("utf8"), source.url));
+          res.json(
+            await extractArticle(source.bytes.toString("utf8"), source.url),
+          );
         return;
       }
       if (!req.path.endsWith("/ask")) {

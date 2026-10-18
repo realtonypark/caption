@@ -4,6 +4,7 @@
 
 - The initial library has three original sample readings.
 - Public URLs import actual article text through the server. PDF text and OCR are extracted in the browser. Import failures never add sample text in place of the requested source.
+- PDF and article figures import as image paragraphs in reading order; oversized or undecodable figures are omitted and counted in the description.
 - Files can be added as PDF, Word (.docx), text or Markdown, and images (PNG, JPG, WebP, BMP) including pasted screenshots. All of it is read in the browser: Word text with Mammoth, images with the same OCR used for scanned PDFs. Legacy .doc files are not supported. Word and text files become "document" readings, images become "image" readings.
 - Public Google Doc links import through the server as a PDF export and are titled with the document name. Private Google files report that they need link sharing.
 - Web links accept HTTP(S) URLs and bare hosts, including numeric ports. Bare hosts default to HTTPS; other schemes are rejected.

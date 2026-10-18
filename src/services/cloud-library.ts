@@ -8,13 +8,16 @@ import {
   type QuerySnapshot,
 } from "firebase/firestore";
 import { database } from "./firebase";
-import { type LibraryState, type Reading, type Insight } from "../reading";
+import {
+  type LibraryState,
+  type Reading,
+  type Insight,
+  CHUNK_BUDGET,
+} from "../reading";
 
 type StoredParagraph = Reading["paragraphs"][number] & {
   continuation?: boolean;
 };
-
-const CHUNK_BUDGET = 500000;
 
 const splitParagraph = (
   paragraph: Reading["paragraphs"][number],

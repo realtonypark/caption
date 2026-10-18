@@ -1,10 +1,32 @@
 import type { Reading, Paragraph } from "../reading";
 import {
   BOOK_DESIGN_COUNT,
+  CHUNK_BUDGET,
   sourceFileKind,
   unsupportedFileMessage,
 } from "../reading";
 import { apiRequest } from "./firebase";
+
+export type ImportProgress = (message: string, fraction?: number) => void;
+
+// PDF text blocks carry hard line breaks from the page layout. Collapse them
+// so a sentence reads as one sentence; tables and code keep their lines.
+export const cleanBlockText = (text: string): string =>
+  text
+    .replace(/(\p{L})-\s*\n\s*(\p{L})/gu, "$1$2")
+    .replace(/\s*\n\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export const pageFraction = (endPage: number, totalPages: number): number =>
+  totalPages > 0 ? Math.min(1, endPage / totalPages) : 0;
+
+export const partialFailureMessage = (
+  fileCount: number,
+  readingCount: number,
+  failures: string[],
+): string =>
+  `Added ${readingCount} of ${fileCount}. Could not import: ${failures.join(" ")}`;
 
 type OcrWorker = Awaited<
   ReturnType<(typeof import("tesseract.js"))["createWorker"]>
@@ -55,7 +77,7 @@ const completeReading = (source: Omit<Reading, "id" | "design">): Reading => {
 };
 export const importLink = async (
   url: string,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   progress("Opening the source…");
   const response = await apiRequest("import", { url });
@@ -93,23 +115,31 @@ export const importLink = async (
   return completeReading({ ...source, kind: "link" });
 };
 
-export const importPdf = async (
-  file: File,
-  progress: (message: string) => void,
-): Promise<Reading> => {
-  if (file.size > 25_000_000)
-    throw new Error("Choose a PDF smaller than 25 MB.");
+let wasmModule:
+  | Promise<typeof import("@llamaindex/liteparse-wasm")>
+  | undefined;
+
+const initParser = async (progress: ImportProgress) => {
   progress("Preparing the PDF…");
-  const [{ default: init, LiteParse }, { default: wasmUrl }] =
-    await Promise.all([
-      import("@llamaindex/liteparse-wasm"),
-      import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
-    ]);
-  await init({ module_or_path: wasmUrl });
+  wasmModule ??= (async () => {
+    try {
+      const [module, { default: wasmUrl }] = await Promise.all([
+        import("@llamaindex/liteparse-wasm"),
+        import("@llamaindex/liteparse-wasm/liteparse_wasm_bg.wasm?url"),
+      ]);
+      await module.default({ module_or_path: wasmUrl });
+      return module;
+    } catch (error) {
+      wasmModule = undefined;
+      throw error;
+    }
+  })();
+  const { LiteParse } = await wasmModule;
   let worker: OcrWorker | undefined;
   const parser = new LiteParse({
     ocrEnabled: true,
     extractBlocks: true,
+    extractImages: true,
     quiet: true,
     maxPages: 401,
     ocrFailureFatal: true,
@@ -143,6 +173,81 @@ export const importPdf = async (
       },
     },
   });
+  return {
+    parser,
+    free: async () => {
+      parser.free();
+      await worker?.terminate();
+    },
+  };
+};
+
+// Figures must fit one cloud chunk. Re-encode down toward the budget; the
+// final serialized paragraph is gated exactly, never stored half-broken.
+type FigureImage = { bytes: number[]; format: string };
+export const figureParagraph = (
+  image: string,
+  page: number,
+): Paragraph | null => {
+  const paragraph: Paragraph = {
+    text: "(Figure)",
+    explanation: "",
+    image,
+    page,
+  };
+  return new TextEncoder().encode(JSON.stringify(paragraph)).length <=
+    CHUNK_BUDGET
+    ? paragraph
+    : null;
+};
+const fitFigure = async (
+  bytes: number[],
+  format: string,
+): Promise<string | null> => {
+  try {
+    const bitmap = await createImageBitmap(
+      new Blob([new Uint8Array(bytes)], {
+        type: `image/${format === "jpg" ? "jpeg" : format}`,
+      }),
+    );
+    try {
+      const fit =
+        1200 / Math.max(1, Math.max(bitmap.width, bitmap.height));
+      for (const [scale, quality] of [
+        [1, 0.82],
+        [1, 0.6],
+        [0.5, 0.6],
+        [0.5, 0.4],
+      ]) {
+        const ratio = Math.min(1, fit) * scale;
+        const width = Math.max(1, Math.round(bitmap.width * ratio));
+        const height = Math.max(1, Math.round(bitmap.height * ratio));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d")!;
+        context.fillStyle = "#fff";
+        context.fillRect(0, 0, width, height);
+        context.drawImage(bitmap, 0, 0, width, height);
+        const url = canvas.toDataURL("image/jpeg", quality);
+        if (url.length <= 350_000) return url;
+      }
+      return null;
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null;
+  }
+};
+
+const parsePdfFile = async (
+  parser: Awaited<ReturnType<typeof initParser>>["parser"],
+  file: File,
+  progress: ImportProgress,
+): Promise<Reading> => {
+  if (file.size > 25_000_000)
+    throw new Error("Choose a PDF smaller than 25 MB.");
   let batch;
   try {
     batch = await parser.openBatchSession(
@@ -154,6 +259,8 @@ export const importPdf = async (
     const paragraphs: Paragraph[] = [];
     let title = "";
     let heading: string | undefined;
+    let kept = 0;
+    let omitted = 0;
     for (
       let chunk = await batch.nextBatch();
       chunk;
@@ -161,10 +268,38 @@ export const importPdf = async (
     ) {
       progress(
         `Reading pages ${chunk.startPage}–${chunk.endPage} of ${batch.totalPages}…`,
+        pageFraction(chunk.endPage, batch.totalPages),
       );
+      const figuresByPage = new Map<number, Map<string, FigureImage>>();
+      for (const image of chunk.result.images ?? []) {
+        if (image.duplicateOf) continue;
+        let figures = figuresByPage.get(image.page);
+        if (!figures) {
+          figures = new Map<string, FigureImage>();
+          figuresByPage.set(image.page, figures);
+        }
+        figures.set(image.id, image);
+      }
       for (const page of chunk.result.pages) {
+        const figures: Map<string, FigureImage> =
+          figuresByPage.get(page.pageNum) ?? new Map();
         for (const block of page.blocks ?? []) {
-          const text = (
+          if (block.kind === "figure") {
+            const figure = block.id ? figures.get(block.id) : undefined;
+            const image = figure
+              ? await fitFigure(figure.bytes, figure.format)
+              : null;
+            const paragraph =
+              image && kept < 80
+                ? figureParagraph(image, page.pageNum)
+                : null;
+            if (paragraph) {
+              kept++;
+              paragraphs.push(paragraph);
+            } else omitted++;
+            continue;
+          }
+          const raw = (
             block.text ||
             block.lines?.join("\n") ||
             (block.rows
@@ -173,6 +308,13 @@ export const importPdf = async (
                   .join("\n")
               : "")
           ).trim();
+          if (!raw) continue;
+          const text =
+            block.kind === "table" ||
+            block.kind === "code" ||
+            block.kind === "grid_fallback"
+              ? raw
+              : cleanBlockText(raw);
           if (!text) continue;
           if (block.kind === "heading") {
             if (
@@ -196,11 +338,15 @@ export const importPdf = async (
       }
     }
     if (!paragraphs.length)
-      throw new Error("No readable text was found in this PDF.");
+      throw new Error("No readable text or figures were found in this PDF.");
     return completeReading({
       title: title || file.name.replace(/\.pdf$/i, ""),
       author: "PDF",
-      description: `${batch.totalPages} pages`,
+      description:
+        `${batch.totalPages} pages` +
+        (omitted
+          ? ` · ${omitted} figure${omitted === 1 ? "" : "s"} omitted`
+          : ""),
       kind: "pdf",
       location: file.name,
       paragraphs,
@@ -214,8 +360,18 @@ export const importPdf = async (
     throw error;
   } finally {
     batch?.free();
-    parser.free();
-    await worker?.terminate();
+  }
+};
+
+export const importPdf = async (
+  file: File,
+  progress: ImportProgress,
+): Promise<Reading> => {
+  const { parser, free } = await initParser(progress);
+  try {
+    return await parsePdfFile(parser, file, progress);
+  } finally {
+    await free();
   }
 };
 
@@ -286,7 +442,7 @@ export const parseTextSource = (source: string, markdown: boolean) => {
 
 export const importText = async (
   file: File,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   if (file.size > 5_000_000)
     throw new Error("Choose a text file smaller than 5 MB.");
@@ -307,7 +463,7 @@ export const importText = async (
 
 export const importDocx = async (
   file: File,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   if (file.size > 25_000_000)
     throw new Error("Choose a Word file smaller than 25 MB.");
@@ -375,7 +531,7 @@ export const importDocx = async (
 
 export const importImage = async (
   file: File,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   if (file.size > 15_000_000)
     throw new Error("Choose an image smaller than 15 MB.");
@@ -407,7 +563,7 @@ export const importImage = async (
 
 export const importFile = async (
   file: File,
-  progress: (message: string) => void,
+  progress: ImportProgress,
 ): Promise<Reading> => {
   switch (sourceFileKind(file)) {
     case "pdf":
@@ -421,4 +577,47 @@ export const importFile = async (
     default:
       throw new Error(unsupportedFileMessage(file.name));
   }
+};
+
+export const importFiles = async (
+  files: File[],
+  progress: ImportProgress,
+): Promise<{ readings: Reading[]; failures: string[] }> => {
+  if (!files.length) throw new Error("Choose at least one file.");
+  const unknown = files.filter((file) => !sourceFileKind(file));
+  if (unknown.length)
+    throw new Error(
+      `These files are not supported: ${unknown.map((file) => file.name).join(", ")}.`,
+    );
+  // One tag for direct and OCR callbacks alike: the parser outlives each file.
+  let tag = "";
+  const dynamic: ImportProgress = (message, fraction) =>
+    progress(`${tag}${message}`, fraction);
+  const { parser, free } = files.some(
+    (file) => sourceFileKind(file) === "pdf",
+  )
+    ? await initParser(dynamic)
+    : { parser: undefined, free: async () => {} };
+  const readings: Reading[] = [];
+  const failures: string[] = [];
+  try {
+    for (const [index, file] of files.entries()) {
+      tag = files.length > 1 ? `File ${index + 1} of ${files.length} · ` : "";
+      try {
+        readings.push(
+          sourceFileKind(file) === "pdf"
+            ? await parsePdfFile(parser!, file, dynamic)
+            : await importFile(file, dynamic),
+        );
+      } catch (error) {
+        failures.push(
+          `${file.name}: ${error instanceof Error ? error.message : "Could not be imported."}`,
+        );
+      }
+    }
+  } finally {
+    await free();
+  }
+  if (!readings.length) throw new Error(failures.join(" "));
+  return { readings, failures };
 };

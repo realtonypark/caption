@@ -14,7 +14,7 @@ it("associates errors with their own source input and clears them independently"
   const add = vi.fn();
   render(<SourceInput onAdd={add} />);
   const link = screen.getByRole("textbox", { name: "Web link" });
-  const file = screen.getByLabelText("Choose a file");
+  const file = screen.getByLabelText("Choose files");
   fireEvent.change(file, {
     target: {
       files: [new File(["text"], "column.xlsx", { type: "text/plain" })],
@@ -32,12 +32,16 @@ it("associates errors with their own source input and clears them independently"
   expect(link).toHaveAccessibleDescription(/Use a link that starts with/);
   expect(file).toHaveAccessibleDescription(/Choose a PDF, Word/);
 
-  fireEvent.change(file, {
-    target: {
-      files: [new File(["sample"], "reading.pdf", { type: "application/pdf" })],
-    },
+  const files = [
+    new File(["sample"], "reading.pdf", { type: "application/pdf" }),
+    new File(["notes"], "lecture.txt", { type: "text/plain" }),
+  ];
+  fireEvent.change(file, { target: { files } });
+  expect(add).toHaveBeenCalledWith({
+    kind: "file",
+    label: "reading.pdf, lecture.txt",
+    files,
   });
-  expect(add).toHaveBeenCalledWith("file", "reading.pdf", expect.any(File));
   await waitFor(() => expect(file).not.toBeDisabled());
   expect(file).toHaveAttribute("aria-invalid", "false");
   expect(file).not.toHaveAccessibleDescription(/Choose a PDF, Word/);
@@ -55,18 +59,22 @@ it.each([
 ])("accepts %s", async (name) => {
   const add = vi.fn();
   render(<SourceInput onAdd={add} />);
-  fireEvent.change(screen.getByLabelText("Choose a file"), {
+  fireEvent.change(screen.getByLabelText("Choose files"), {
     target: { files: [new File(["x"], name)] },
   });
-  expect(add).toHaveBeenCalledWith("file", name, expect.any(File));
+  expect(add).toHaveBeenCalledWith({
+    kind: "file",
+    label: name,
+    files: [expect.any(File)],
+  });
   await waitFor(() =>
-    expect(screen.getByLabelText("Choose a file")).not.toBeDisabled(),
+    expect(screen.getByLabelText("Choose files")).not.toBeDisabled(),
   );
 });
 
 it("explains how to open an old Word file", () => {
   render(<SourceInput onAdd={vi.fn()} />);
-  const file = screen.getByLabelText("Choose a file");
+  const file = screen.getByLabelText("Choose files");
   fireEvent.change(file, { target: { files: [new File(["x"], "old.doc")] } });
   expect(file).toHaveAccessibleDescription(/Save it as \.docx/);
 });
@@ -75,7 +83,7 @@ it("shows why a file could not be read", async () => {
   render(
     <SourceInput onAdd={vi.fn().mockRejectedValue(new Error("Too large."))} />,
   );
-  const file = screen.getByLabelText("Choose a file");
+  const file = screen.getByLabelText("Choose files");
   fireEvent.change(file, { target: { files: [new File(["x"], "big.docx")] } });
   expect(await screen.findByRole("alert")).toHaveTextContent("Too large.");
   expect(file).toHaveAttribute("aria-invalid", "true");
@@ -92,12 +100,12 @@ it("opens a pasted screenshot but ignores pasted text", async () => {
       files: [new File(["png"], "image.png", { type: "image/png" })],
     },
   });
-  expect(add).toHaveBeenCalledWith(
-    "file",
-    expect.stringMatching(/^Screenshot .*\.png$/),
-    expect.any(File),
-  );
+  expect(add).toHaveBeenCalledWith({
+    kind: "file",
+    label: expect.stringMatching(/^Screenshot .*\.png$/),
+    files: [expect.any(File)],
+  });
   await waitFor(() =>
-    expect(screen.getByLabelText("Choose a file")).not.toBeDisabled(),
+    expect(screen.getByLabelText("Choose files")).not.toBeDisabled(),
   );
 });

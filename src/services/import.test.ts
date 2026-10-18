@@ -1,10 +1,14 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
+  cleanBlockText,
+  figureParagraph,
   importDocx,
   importFile,
   importImage,
   importText,
+  pageFraction,
   parseTextSource,
+  partialFailureMessage,
 } from "./import";
 
 const recognize = vi.fn();
@@ -223,4 +227,34 @@ it("rejects unsupported file types with guidance", async () => {
   await expect(importFile(new File(["x"], "old.doc"), vi.fn())).rejects.toThrow(
     /Save it as \.docx/,
   );
+});
+
+it("joins hard line breaks inside a PDF text block", () => {
+  expect(cleanBlockText("Studies of\nattention show\nresults")).toBe(
+    "Studies of attention show results",
+  );
+  expect(cleanBlockText("an atten-\ntion test")).toBe("an attention test");
+  expect(cleanBlockText("  spaced   out  ")).toBe("spaced out");
+});
+
+it("clamps page progress to the bar and names partial failures", () => {
+  expect(pageFraction(401, 400)).toBe(1);
+  expect(pageFraction(20, 40)).toBe(0.5);
+  expect(partialFailureMessage(3, 2, ["b.pdf: too big"])).toBe(
+    "Added 2 of 3. Could not import: b.pdf: too big",
+  );
+});
+
+it("reports zero progress for an empty document", () => {
+  expect(pageFraction(0, 0)).toBe(0);
+});
+
+it("omits figure images whose serialized paragraph exceeds the chunk budget", () => {
+  const kept = figureParagraph("data:image/jpeg;base64,AAA", 3);
+  expect(kept).toMatchObject({
+    text: "(Figure)",
+    image: "data:image/jpeg;base64,AAA",
+    page: 3,
+  });
+  expect(figureParagraph("x".repeat(600_000), 1)).toBeNull();
 });

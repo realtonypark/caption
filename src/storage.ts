@@ -34,7 +34,8 @@ const validReading = (value: unknown): value is Reading =>
       typeof paragraph.text === "string" &&
       typeof paragraph.explanation === "string" &&
       (paragraph.heading === undefined ||
-        typeof paragraph.heading === "string"),
+        typeof paragraph.heading === "string") &&
+      (paragraph.image === undefined || typeof paragraph.image === "string"),
   );
 const validPassage = (value: unknown, reading: Reading): value is Passage =>
   isRecord(value) &&

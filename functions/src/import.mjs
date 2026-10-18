@@ -70,7 +70,11 @@ export const filenameFromDisposition = (header) => {
   }
 };
 
-export const downloadSource = async (raw, signal) => {
+export const downloadSource = async (
+  raw,
+  signal,
+  wanted = /html|application\/pdf/,
+) => {
   let target = googleDocExportUrl(raw) ?? raw;
   const paper = /^https:\/\/(?:www\.)?arxiv\.org\/abs\/([\w./-]+)$/i.exec(raw);
   if (paper) target = `https://arxiv.org/pdf/${paper[1]}`;
@@ -112,11 +116,15 @@ export const downloadSource = async (raw, signal) => {
       const type = (
         response.headers.get("content-type") ?? ""
       ).toLowerCase();
-      if (!/html|application\/pdf/.test(type)) {
+      if (!wanted.test(type)) {
         await response.body?.cancel();
         throw new Error("That link is not an article or PDF.");
       }
-      const limit = type.includes("application/pdf") ? 25_000_000 : 6_000_000;
+      const limit = type.includes("application/pdf")
+        ? 25_000_000
+        : type.startsWith("image/")
+          ? 400_000
+          : 6_000_000;
       const chunks = [];
       let size = 0;
       for await (const chunk of response.body) {
@@ -140,7 +148,10 @@ export const downloadSource = async (raw, signal) => {
   throw new Error("That link redirected too many times.");
 };
 
-export const extractArticle = (html, url) => {
+const fetchImage = (src) =>
+  downloadSource(src, AbortSignal.timeout(8000), /^image\//);
+
+export const extractArticle = async (html, url, fetchRemote = fetchImage) => {
   const { document } = parseHTML(html);
   const base = document.createElement("base");
   base.setAttribute("href", url);
@@ -166,10 +177,48 @@ export const extractArticle = (html, url) => {
   const { document: clean } = parseHTML(
     `<html><body>${article.content}</body></html>`,
   );
+  // Remote images are embedded at import through pinned DNS, so the reader
+  // never fetches a re-resolved URL. Null marks a slot filled after fetch.
   const paragraphs = [];
+  const pending = [];
   let heading;
-  for (const element of clean.querySelectorAll("h1,h2,h3,h4,p,li,pre,table")) {
+  let kept = 0;
+  let omitted = 0;
+  for (const element of clean.querySelectorAll(
+    "h1,h2,h3,h4,p,li,pre,table,img",
+  )) {
     if (element.parentElement?.closest("li,pre,table")) continue;
+    if (element.tagName === "IMG") {
+      const src = element.getAttribute("src") ?? "";
+      if (!src) continue;
+      if (src.startsWith("data:")) {
+        if (!src.startsWith("data:image/") || src.length > 350_000) {
+          omitted++;
+          continue;
+        }
+        if (kept >= 80) {
+          omitted++;
+          continue;
+        }
+        kept++;
+        paragraphs.push({ text: "(Figure)", explanation: "", image: src });
+        continue;
+      }
+      if (kept + pending.length >= 80) {
+        omitted++;
+        continue;
+      }
+      let absolute;
+      try {
+        absolute = new URL(src, url).href;
+      } catch {
+        omitted++;
+        continue;
+      }
+      pending.push({ absolute, slot: paragraphs.length });
+      paragraphs.push(null);
+      continue;
+    }
     const text = element.textContent.replace(/\s+/g, " ").trim();
     if (!text) continue;
     if (/^H\d$/.test(element.tagName)) {
@@ -179,10 +228,30 @@ export const extractArticle = (html, url) => {
     paragraphs.push({ text, explanation: "", ...(heading ? { heading } : {}) });
     heading = undefined;
   }
-  if (
-    !paragraphs.length ||
-    paragraphs.map((p) => p.text).join(" ").length < 160
-  )
+  const fetched = await Promise.all(
+    pending.map(async ({ absolute }) => {
+      try {
+        const file = await fetchRemote(absolute);
+        const dataUrl = `data:${file.type.split(";")[0]};base64,${file.bytes.toString("base64")}`;
+        return dataUrl.length <= 350_000 ? dataUrl : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  const dropped = new Set();
+  fetched.forEach((dataUrl, index) => {
+    const slot = pending[index].slot;
+    if (dataUrl && kept < 80) {
+      kept++;
+      paragraphs[slot] = { text: "(Figure)", explanation: "", image: dataUrl };
+    } else {
+      dropped.add(slot);
+      omitted++;
+    }
+  });
+  const filled = paragraphs.filter((_, index) => !dropped.has(index));
+  if (!filled.length || filled.map((p) => p.text).join(" ").length < 160)
     throw new Error(
       "That page has too little readable text. It may require a subscription or JavaScript.",
     );
@@ -192,8 +261,10 @@ export const extractArticle = (html, url) => {
       0,
       160,
     ),
-    description: (article.excerpt || "").slice(0, 400),
+    description:
+      (article.excerpt || "").slice(0, 400) +
+      (omitted ? ` · ${omitted} figures omitted` : ""),
     location: url,
-    paragraphs,
+    paragraphs: filled,
   };
 };

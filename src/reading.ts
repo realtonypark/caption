@@ -3,6 +3,7 @@ export interface Paragraph {
   explanation: string;
   heading?: string;
   page?: number;
+  image?: string;
 }
 export const READING_KINDS = [
   "sample",
@@ -41,6 +42,9 @@ export interface Passage {
   ranges: TextRange[];
 }
 export const MARKERS = ["yellow", "green", "blue", "pink"] as const;
+// Max serialized bytes of one stored paragraph chunk. Import gates figures
+// against it so a figure paragraph is never stored half-broken.
+export const CHUNK_BUDGET = 500000;
 export type Marker = (typeof MARKERS)[number];
 export type ReadingAction =
   "ask" | "explain" | "define" | "simplify" | "check" | "connect" | "counter";
