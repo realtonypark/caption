@@ -1,0 +1,58 @@
+functions/src/ai.md
+  h_05e5164a29872e 5
+functions/src/ai.mjs
+  h_05e5164a29872e 11,121-124
+functions/src/ai.test.mjs
+  h_05e5164a29872e 98-108
+functions/src/import.md
+  h_05e5164a29872e 3
+functions/src/import.mjs
+  h_05e5164a29872e 40-72,78,107,136-143
+functions/src/import.test.mjs
+  h_05e5164a29872e 3-10,163-211
+functions/src/index.mjs
+  h_05e5164a29872e 146-151
+package-lock.json
+  h_05e5164a29872e 14-15,2679-2691,2712-2718,3504-3512,3577-3585,3645-3674,3786-3805,3855-3875,3891-3900,3994-3999,4008-4026,4512-4522,4765-4778,4807-4812,4844-4855,4901-4906,5025-5059,5084-5092,5370-5380,5423-5444,5595-5600,5651-5666,5707-5713,5800-5805,5859-5868,5907-5927,5967-5976,6062-6067,6122-6127,6135-6144,6152-6166,6206-6215,6259-6268,6441-6446,6504-6519,7105-7113
+package.json
+  h_05e5164a29872e 21-22
+src/components/Notepad.test.tsx
+  h_05e5164a29872e 1-65
+src/components/Notepad.tsx
+  h_05e5164a29872e 1-2,4,11-33,40-69
+src/components/Reader.tsx
+  h_05e5164a29872e 3,395
+src/components/SourceInput.test.tsx
+  h_05e5164a29872e 17-18,20,23-24,26-27,33,39,45-47,50-111
+src/components/SourceInput.tsx
+  h_05e5164a29872e 1-7,19,36-79,119,122,126,128,132-135,147-149,155
+src/index.css
+  h_05e5164a29872e 2062-2075
+src/reading.md
+  h_05e5164a29872e 6-9,16,20
+src/reading.ts
+  h_05e5164a29872e 8-22,28,494-515
+src/services/export.test.ts
+  h_05e5164a29872e 1-122
+src/services/export.ts
+  h_05e5164a29872e 1-230
+src/services/import.test.ts
+  h_05e5164a29872e 1,5-7,10,14-186,190-203,205-212,214-234,236-237
+src/services/import.ts
+  h_05e5164a29872e 2-7,31-54,85-87,90,94-102,138,149,378-446,449-451,455-526,532-581,587,596-598,608,610
+src/storage.ts
+  h_05e5164a29872e 5,21
+src/vite-env.d.ts
+  h_05e5164a29872e 2-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "190c9db9799ffbf966a4b58c286cd6826dd6b055",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
