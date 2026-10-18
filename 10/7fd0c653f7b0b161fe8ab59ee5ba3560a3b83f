@@ -1,0 +1,14 @@
+src/index.css
+  h_05e5164a29872e 2070,2095-2099
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "107fd0c653f7b0b161fe8ab59ee5ba3560a3b83f",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
