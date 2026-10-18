@@ -4,12 +4,27 @@ export interface Paragraph {
   heading?: string;
   page?: number;
 }
+export const READING_KINDS = [
+  "sample",
+  "link",
+  "pdf",
+  "document",
+  "image",
+] as const;
+export type ReadingKind = (typeof READING_KINDS)[number];
+export const READING_LABELS: Record<ReadingKind, string> = {
+  sample: "Sample reading",
+  link: "Web reading",
+  pdf: "PDF reading",
+  document: "Document reading",
+  image: "Image reading",
+};
 export interface Reading {
   id: string;
   title: string;
   author: string;
   description: string;
-  kind: "sample" | "link" | "pdf";
+  kind: ReadingKind;
   location?: string;
   design: number;
   paragraphs: Paragraph[];
@@ -472,6 +487,28 @@ export const normalizeLink = (input: string): string => {
     throw new Error("Use a link that starts with https:// or http://.");
   return url.href;
 };
+export type SourceFileKind = "pdf" | "docx" | "text" | "image";
+export const SOURCE_FILE_ACCEPT =
+  ".pdf,.docx,.txt,.md,.markdown,image/png,image/jpeg,image/webp,image/bmp";
+export const sourceFileKind = (file: {
+  name: string;
+  type: string;
+}): SourceFileKind | undefined => {
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".pdf")) return "pdf";
+  if (name.endsWith(".docx")) return "docx";
+  if (/\.(txt|md|markdown)$/.test(name)) return "text";
+  if (
+    /\.(png|jpe?g|webp|bmp)$/.test(name) ||
+    /^image\/(png|jpeg|webp|bmp)$/.test(file.type)
+  )
+    return "image";
+  return undefined;
+};
+export const unsupportedFileMessage = (name: string): string =>
+  name.toLowerCase().endsWith(".doc")
+    ? "Old .doc files cannot be read. Save it as .docx in Word or Google Docs and try again."
+    : "Choose a PDF, Word (.docx), text, Markdown, or image (PNG, JPG, WebP, BMP) file.";
 export const makePreview = (
   id: string,
   kind: "link" | "pdf",

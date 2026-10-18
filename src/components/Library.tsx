@@ -1,6 +1,6 @@
 import type { Reading } from "../reading";
 import { Book } from "./Book";
-import { SourceInput } from "./SourceInput";
+import { SourceInput, type AddSource } from "./SourceInput";
 export const Library = ({
   readings,
   onAdd,
@@ -9,11 +9,7 @@ export const Library = ({
   onRemove,
 }: {
   readings: Reading[];
-  onAdd: (
-    kind: "link" | "pdf",
-    label: string,
-    file?: File,
-  ) => void | Promise<void>;
+  onAdd: AddSource;
   onOpen: (id: string, book: HTMLButtonElement) => void;
   progress?: string;
   onRemove?: (id: string) => void;

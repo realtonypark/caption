@@ -1,18 +1,20 @@
-import { useState, type FormEvent } from "react";
-import { normalizeLink } from "../reading";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  SOURCE_FILE_ACCEPT,
+  normalizeLink,
+  sourceFileKind,
+  unsupportedFileMessage,
+} from "../reading";
 import { Icon } from "./Icon";
-export const SourceInput = ({
-  onAdd,
-}: {
-  onAdd: (
-    kind: "link" | "pdf",
-    label: string,
-    file?: File,
-  ) => void | Promise<void>;
-}) => {
+export type AddSource = (
+  kind: "link" | "file",
+  label: string,
+  file?: File,
+) => void | Promise<void>;
+export const SourceInput = ({ onAdd }: { onAdd: AddSource }) => {
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
-  const [pdfError, setPdfError] = useState("");
+  const [fileError, setFileError] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -29,6 +31,41 @@ export const SourceInput = ({
       setBusy(false);
     }
   };
+  const addFile = async (file: File) => {
+    if (!sourceFileKind(file)) {
+      setFileError(unsupportedFileMessage(file.name));
+      return;
+    }
+    setFileError("");
+    setBusy(true);
+    try {
+      await onAdd("file", file.name, file);
+    } catch (error) {
+      setFileError(
+        error instanceof Error ? error.message : "Could not read this file.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  useEffect(() => {
+    const paste = (event: ClipboardEvent) => {
+      const image = Array.from(event.clipboardData?.files ?? []).find((file) =>
+        file.type.startsWith("image/"),
+      );
+      if (!image || busy) return;
+      event.preventDefault();
+      void addFile(
+        new File(
+          [image],
+          `Screenshot ${new Date().toLocaleString()}.${image.type.split("/")[1]}`,
+          { type: image.type },
+        ),
+      );
+    };
+    document.addEventListener("paste", paste);
+    return () => document.removeEventListener("paste", paste);
+  });
   return (
     <section
       className="source-section text-center"
@@ -68,39 +105,22 @@ export const SourceInput = ({
         <div className="source-file-row flex items-center justify-between">
           <label className="file-picker flex items-center gap-2">
             <Icon name="file" />
-            <span>Or choose a PDF</span>
+            <span>Or choose a file</span>
             <input
               type="file"
-              accept=".pdf,application/pdf"
+              accept={SOURCE_FILE_ACCEPT}
               disabled={busy}
-              aria-label="Choose a PDF"
-              aria-invalid={!!pdfError}
+              aria-label="Choose a file"
+              aria-invalid={!!fileError}
               aria-describedby={
-                pdfError ? "source-pdf-error source-hint" : "source-hint"
+                fileError ? "source-file-error source-hint" : "source-hint"
               }
               onChange={async (event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                if (!/\.pdf$/i.test(file.name)) {
-                  setPdfError("Choose a PDF file.");
-                  event.target.value = "";
-                  return;
-                }
-                setPdfError("");
                 const input = event.currentTarget;
-                setBusy(true);
-                try {
-                  await onAdd("pdf", file.name, file);
-                } catch (error) {
-                  setPdfError(
-                    error instanceof Error
-                      ? error.message
-                      : "Could not read this PDF.",
-                  );
-                } finally {
-                  setBusy(false);
-                  input.value = "";
-                }
+                const file = input.files?.[0];
+                if (!file) return;
+                await addFile(file);
+                input.value = "";
               }}
             />
           </label>
@@ -112,15 +132,15 @@ export const SourceInput = ({
           {linkError}
         </p>
       )}
-      {pdfError && (
-        <p id="source-pdf-error" className="input-error" role="alert">
-          {pdfError}
+      {fileError && (
+        <p id="source-file-error" className="input-error" role="alert">
+          {fileError}
         </p>
       )}
       <p id="source-hint" className="demo-hint">
         {busy
           ? "Opening your reading…"
-          : "Read a web article or PDF. Your notes stay with its source."}
+          : "Read an article, Google Doc, PDF, Word file, text, or image. You can also paste a screenshot. Your notes stay with its source."}
       </p>
     </section>
   );

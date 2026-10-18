@@ -18,6 +18,8 @@
     "@llamaindex/liteparse-wasm": "^2.16.0",
     "@tailwindcss/vite": "^4.3.3",
     "firebase": "^13.0.0",
+    "jspdf": "^4.2.1",
+    "mammoth": "^1.13.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",

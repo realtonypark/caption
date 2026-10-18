@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { publicAddress, checkedUrl, extractArticle } from "./import.mjs";
+import {
+  publicAddress,
+  checkedUrl,
+  extractArticle,
+  googleDocExportUrl,
+  nextHop,
+  filenameFromDisposition,
+} from "./import.mjs";
 
 test("blocks private, mapped, metadata, multicast, and reserved network addresses", async () => {
   for (const address of [
@@ -50,5 +57,53 @@ test("extracts article text and headings without evaluating source scripts", () 
   assert.ok(article.paragraphs.some((p) => p.heading === "Everyday access"));
   assert.ok(
     article.paragraphs.every((p) => !p.text.includes("Do not execute")),
+  );
+});
+test("turns shared Google Doc links into PDF exports and leaves published pages alone", () => {
+  const exported =
+    "https://docs.google.com/document/d/1AbC-d_9/export?format=pdf";
+  for (const url of [
+    "https://docs.google.com/document/d/1AbC-d_9/edit?usp=sharing",
+    "https://docs.google.com/document/d/1AbC-d_9",
+    "https://docs.google.com/document/u/0/d/1AbC-d_9/edit#heading=h.x",
+  ])
+    assert.equal(googleDocExportUrl(url), exported, url);
+  for (const url of [
+    "https://docs.google.com/document/d/e/2PACX-1vT/pub",
+    "https://docs.google.com/spreadsheets/d/1AbC/edit",
+    "https://example.com/document/d/1AbC/edit",
+    "http://docs.google.com/document/d/1AbC/edit",
+  ])
+    assert.equal(googleDocExportUrl(url), undefined, url);
+});
+test("explains private Google files instead of importing the sign-in page", () => {
+  assert.throws(
+    () =>
+      nextHop(
+        "https://accounts.google.com/ServiceLogin?continue=x",
+        "https://docs.google.com/document/d/1/export?format=pdf",
+      ),
+    /private/,
+  );
+  assert.equal(
+    nextHop("/next", "https://example.com/start"),
+    "https://example.com/next",
+  );
+});
+test("reads a download name from Content-Disposition", () => {
+  assert.equal(
+    filenameFromDisposition(
+      `attachment; filename="Notes.pdf"; filename*=UTF-8''My%20Caf%C3%A9%20Notes.pdf`,
+    ),
+    "My Café Notes.pdf",
+  );
+  assert.equal(
+    filenameFromDisposition('attachment; filename="plain.pdf"'),
+    "plain.pdf",
+  );
+  assert.equal(filenameFromDisposition(null), "");
+  assert.equal(
+    filenameFromDisposition("attachment; filename*=UTF-8''%E0%A4%A"),
+    "",
   );
 });

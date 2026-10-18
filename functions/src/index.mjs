@@ -143,7 +143,12 @@ export const api = onRequest(
         if (source.type.includes("application/pdf")) {
           res.set("Content-Type", "application/pdf");
           res.set("X-Source-URL", source.url);
-          res.set("Access-Control-Expose-Headers", "X-Source-URL");
+          if (source.filename)
+            res.set("X-Source-Filename", encodeURIComponent(source.filename));
+          res.set(
+            "Access-Control-Expose-Headers",
+            "X-Source-URL, X-Source-Filename",
+          );
           res.send(source.bytes);
         } else
           res.json(extractArticle(source.bytes.toString("utf8"), source.url));

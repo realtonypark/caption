@@ -37,8 +37,41 @@ export const checkedUrl = async (raw, resolve = lookup) => {
   return { url, addresses };
 };
 
+// Public Google Docs export to PDF; /d/e/ links are "published to the web" pages and stay HTML.
+export const googleDocExportUrl = (raw) => {
+  const match =
+    /^https:\/\/docs\.google\.com\/document\/(?:u\/\d+\/)?d\/(?!e\/)([\w-]+)/i.exec(
+      raw,
+    );
+  return match
+    ? `https://docs.google.com/document/d/${match[1]}/export?format=pdf`
+    : undefined;
+};
+
+export const nextHop = (location, base) => {
+  const next = new URL(location, base);
+  if (next.hostname === "accounts.google.com")
+    throw new Error(
+      'This Google file is private. Share it as "Anyone with the link" (Viewer), or download it and upload the file instead.',
+    );
+  return next.href;
+};
+
+export const filenameFromDisposition = (header) => {
+  const value = header ?? "";
+  const raw =
+    /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(value)?.[1] ??
+    /filename\s*=\s*"?([^";]+)"?/i.exec(value)?.[1] ??
+    "";
+  try {
+    return decodeURIComponent(raw.trim()).slice(0, 300);
+  } catch {
+    return "";
+  }
+};
+
 export const downloadSource = async (raw, signal) => {
-  let target = raw;
+  let target = googleDocExportUrl(raw) ?? raw;
   const paper = /^https:\/\/(?:www\.)?arxiv\.org\/abs\/([\w./-]+)$/i.exec(raw);
   if (paper) target = `https://arxiv.org/pdf/${paper[1]}`;
   for (let hop = 0; hop < 6; hop++) {
@@ -67,7 +100,7 @@ export const downloadSource = async (raw, signal) => {
         await response.body?.cancel();
         if (!location)
           throw new Error("That page redirected without a destination.");
-        target = new URL(location, url).href;
+        target = nextHop(location, url);
         continue;
       }
       if (!response.ok) {
@@ -92,7 +125,14 @@ export const downloadSource = async (raw, signal) => {
           throw new Error("This source is too large to import.");
         chunks.push(chunk);
       }
-      return { bytes: Buffer.concat(chunks), type, url: url.href };
+      return {
+        bytes: Buffer.concat(chunks),
+        type,
+        url: url.href,
+        filename: filenameFromDisposition(
+          response.headers.get("content-disposition"),
+        ),
+      };
     } finally {
       await agent.close();
     }
