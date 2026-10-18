@@ -200,6 +200,47 @@ export const App = () => {
             void openBook(book, () => navigate(readingPath(id)));
           }}
           progress={progress}
+          onRename={(id) => {
+            const current = state.readings.find(
+              (reading) => reading.id === id,
+            )?.title;
+            const entered = window.prompt(
+              "Rename this reading",
+              current ?? "",
+            );
+            if (entered === null) return;
+            const title = entered.trim().slice(0, 500);
+            if (!title) {
+              window.alert("A reading needs a title.");
+              return;
+            }
+            let conflict: string | null | undefined;
+            updateLibrary((previous) => {
+              const live = previous.readings.find(
+                (reading) => reading.id === id,
+              )?.title;
+              if (live === undefined) {
+                conflict = null;
+                return previous;
+              }
+              if (live !== current) {
+                conflict = live;
+                return previous;
+              }
+              return {
+                ...previous,
+                readings: previous.readings.map((reading) =>
+                  reading.id === id ? { ...reading, title } : reading,
+                ),
+              };
+            });
+            if (conflict !== undefined)
+              window.alert(
+                conflict === null
+                  ? "This reading was removed while you were renaming."
+                  : `“${conflict}” changed while you were renaming. Start again from the new title.`,
+              );
+          }}
           onRemove={(id) => {
             const title = state.readings.find(
               (reading) => reading.id === id,

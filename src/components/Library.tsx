@@ -5,12 +5,14 @@ export const Library = ({
   readings,
   onAdd,
   onOpen,
+  onRename,
   progress,
   onRemove,
 }: {
   readings: Reading[];
   onAdd: (input: SourceAdd) => void | Promise<void>;
   onOpen: (id: string, book: HTMLButtonElement) => void;
+  onRename: (id: string) => void;
   progress?: { message: string; fraction?: number };
   onRemove?: (id: string) => void;
 }) => (
@@ -32,7 +34,9 @@ export const Library = ({
     <section className="shelf" aria-labelledby="library-title">
       <div className="shelf-heading flex items-baseline justify-between">
         <h2 id="library-title">Your library</h2>
-        <span>{readings.length} readings</span>
+        <span>
+          {readings.length} {readings.length === 1 ? "reading" : "readings"}
+        </span>
       </div>
       {readings.length ? (
         <ul className="book-stack">
@@ -41,6 +45,7 @@ export const Library = ({
               key={reading.id}
               reading={reading}
               onOpen={(book) => onOpen(reading.id, book)}
+              onRename={() => onRename(reading.id)}
               onRemove={onRemove ? () => onRemove(reading.id) : undefined}
             />
           ))}

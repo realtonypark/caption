@@ -34,7 +34,6 @@ export const Notepad = ({ state }: { state: LibraryState }) => {
   return (
     <main id="main" className="notepad-page">
       <header className="notepad-header">
-        <div className="eyebrow">A place for what stays with you</div>
         <h1>Your Notepad</h1>
         {groups.length > 0 && (
           <div className="export-notepad">
