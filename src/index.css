@@ -2079,12 +2079,21 @@ ul {
   box-shadow: 0 8px 20px -8px #00000080;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 120ms ease-in;
+  transition: opacity 120ms ease-in 150ms;
 }
 .book-row:hover .book-actions,
 .book-row:focus-within .book-actions {
   opacity: 1;
   pointer-events: auto;
+  transition-delay: 0s;
+}
+.book-actions::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 12px;
 }
 @media (hover: none) {
   .book-actions {
