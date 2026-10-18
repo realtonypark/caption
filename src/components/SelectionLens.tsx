@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   isShortSelection,
+  MARKERS,
   passageLabel,
   READING_ACTIONS,
   type Insight,
@@ -277,31 +278,31 @@ export const SelectionLens = ({
         )}
         {mode === "actions" ? (
           <div className="lens-actions">
-            {existing ? (
+            {MARKERS.map((color) => (
               <button
-                className="lens-button"
+                key={color}
                 type="button"
-                aria-label="Remove highlight"
+                className="lens-dot"
+                data-color={color}
+                data-active={String(
+                  !!existing && (insight?.color ?? "yellow") === color,
+                )}
+                aria-label={
+                  existing
+                    ? `Change highlight to ${color}`
+                    : `Highlight in ${color}`
+                }
+                title={
+                  existing
+                    ? `Change highlight to ${color}`
+                    : `Highlight in ${color}`
+                }
                 onClick={() => {
-                  onSave({ highlighted: false, note: "" });
+                  onSave({ highlighted: true, color });
                   close();
                 }}
-              >
-                Remove highlight
-              </button>
-            ) : (
-              <button
-                className="lens-button"
-                type="button"
-                aria-label="Highlight"
-                onClick={() => {
-                  onSave({ highlighted: true });
-                  close();
-                }}
-              >
-                Highlight
-              </button>
-            )}
+              />
+            ))}
             <span className="lens-divider" />
             <button
               className="lens-button lens-ask"
@@ -329,8 +330,22 @@ export const SelectionLens = ({
               aria-label={insight?.note ? "Edit note" : "Add a note"}
               onClick={toNote}
             >
-              {insight?.note ? "Edit note" : "Add a note"}
+              <Icon name="pen" />
+              <span>{insight?.note ? "Edit note" : "Add a note"}</span>
             </button>
+            {existing && (
+              <button
+                className="lens-button"
+                type="button"
+                aria-label="Remove highlight"
+                onClick={() => {
+                  onSave({ highlighted: false, note: "" });
+                  close();
+                }}
+              >
+                Remove highlight
+              </button>
+            )}
           </div>
         ) : mode === "note" ? (
           <form

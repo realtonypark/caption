@@ -1151,6 +1151,25 @@ ul {
   padding: 0;
   position: relative;
 }
+.lens-dot {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-inline: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marker);
+  cursor: pointer;
+}
+.lens-dot:hover {
+  filter: brightness(1.08);
+}
+.lens-dot[data-active="true"] {
+  box-shadow:
+    0 0 0 2px #1d1b18,
+    0 0 0 4px #f3efe6;
+}
 .lens-pointer {
   position: absolute;
   left: calc(var(--lens-arrow, 20px) - 5px);
@@ -1585,6 +1604,7 @@ ul {
 .notepad-header > p {
   font-size: 14px;
   line-height: 1.9;
+  margin: 16px 0 0;
   color: #918877;
 }
 .notepad-empty {
@@ -1787,6 +1807,9 @@ ul {
   }
   .book-row {
     padding-bottom: 52px;
+  }
+  .book-actions {
+    top: 46px;
   }
   .book-volume {
     height: 92px;
@@ -2039,11 +2062,35 @@ ul {
     right: 16px;
   }
 }
+.book-row {
+  position: relative;
+}
 .book-actions {
+  position: absolute;
+  right: 0;
+  top: 50px;
+  transform: translateY(-50%);
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
   gap: 4px;
-  margin-top: 10px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #1d1b18f2;
+  box-shadow: 0 8px 20px -8px #00000080;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-in;
+}
+.book-row:hover .book-actions,
+.book-row:focus-within .book-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: none) {
+  .book-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 .book-actions button {
   width: 32px;
