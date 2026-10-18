@@ -31,7 +31,9 @@ export const Book = ({
           <span className="book-bottom" aria-hidden="true" />
           <span className="book-pages" aria-hidden="true" />
           <span className="book-spine">
-            <span className="book-author">{reading.author}</span>
+            <span className="book-author">
+              {reading.kind === "sample" ? "Sample" : reading.author}
+            </span>
             <span className="book-title">{reading.title}</span>
             <span className="book-emblem">
               <Icon name="book" />

@@ -277,6 +277,32 @@ export const SelectionLens = ({
         )}
         {mode === "actions" ? (
           <div className="lens-actions">
+            {existing ? (
+              <button
+                className="lens-button"
+                type="button"
+                aria-label="Remove highlight"
+                onClick={() => {
+                  onSave({ highlighted: false, note: "" });
+                  close();
+                }}
+              >
+                Remove highlight
+              </button>
+            ) : (
+              <button
+                className="lens-button"
+                type="button"
+                aria-label="Highlight"
+                onClick={() => {
+                  onSave({ highlighted: true });
+                  close();
+                }}
+              >
+                Highlight
+              </button>
+            )}
+            <span className="lens-divider" />
             <button
               className="lens-button lens-ask"
               type="button"
@@ -297,55 +323,14 @@ export const SelectionLens = ({
               <Icon name="more" />
             </button>
             <span className="lens-divider" />
-            {existing ? (
-              <>
-                <button
-                  className="lens-button icon-button"
-                  type="button"
-                  aria-label={insight.note ? "Edit note" : "Add a note"}
-                  title={insight.note ? "Edit note" : "Add a note"}
-                  onClick={toNote}
-                >
-                  <Icon name="pen" />
-                </button>
-                <button
-                  className="lens-button icon-button"
-                  type="button"
-                  aria-label="Remove highlight"
-                  title="Remove highlight"
-                  onClick={() => {
-                    onSave({ highlighted: false, note: "" });
-                    close();
-                  }}
-                >
-                  <Icon name="erase" />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="lens-button icon-button"
-                  type="button"
-                  aria-label="Highlight"
-                  title="Highlight"
-                  onClick={() => {
-                    onSave({ highlighted: true });
-                    close();
-                  }}
-                >
-                  <Icon name="highlight" />
-                </button>
-                <button
-                  className="lens-button icon-button"
-                  type="button"
-                  aria-label="Add a note"
-                  title="Add a note"
-                  onClick={toNote}
-                >
-                  <Icon name="pen" />
-                </button>
-              </>
-            )}
+            <button
+              className="lens-button"
+              type="button"
+              aria-label={insight?.note ? "Edit note" : "Add a note"}
+              onClick={toNote}
+            >
+              {insight?.note ? "Edit note" : "Add a note"}
+            </button>
           </div>
         ) : mode === "note" ? (
           <form

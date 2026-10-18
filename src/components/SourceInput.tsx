@@ -152,7 +152,7 @@ export const SourceInput = ({
       <p id="source-hint" className="demo-hint">
         {busy
           ? "Opening your reading…"
-          : "Read an article, Google Doc, PDF, Word file, text, or image. You can also paste a screenshot. Your notes stay with its source."}
+          : "Read an article, Google Doc, PDF, Word file, text, or image. You can also paste a screenshot."}
       </p>
     </section>
   );

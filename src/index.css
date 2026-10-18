@@ -650,6 +650,8 @@ ul {
   margin-top: 27px;
 }
 .paragraph-section h2 {
+  font-family: var(--font-title);
+  font-weight: 500;
   font-size: 37px;
   line-height: 1.2;
   margin: 41px 0 19px;
