@@ -96,6 +96,17 @@ test("routes a named model to the free fallback with maximum reasoning", async (
   assert.equal(sent.stream, true);
   assert.equal(sent.plugins, undefined);
   await answerRequest(
+    { ...body, action: "check" },
+    "test-key",
+    undefined,
+    async (_url, options) => {
+      assert.deepEqual(JSON.parse(options.body).plugins, [
+        { id: "web", max_results: 5 },
+      ]);
+      return new Response("");
+    },
+  );
+  await answerRequest(
     { ...body, web: true },
     "test-key",
     undefined,

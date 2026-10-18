@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
+  READING_LABELS,
   answerThreads,
   saveInsight,
   findInsight,
@@ -391,13 +392,7 @@ export const Reader = ({
           <header className="article-header">
             <div className="eyebrow flex items-center gap-3">
               <span>
-                {reading.kind === "sample"
-                  ? "Sample reading"
-                  : reading.kind === "pdf"
-                    ? "PDF reading"
-                    : reading.kind === "text"
-                      ? "Text reading"
-                      : "Web reading"}
+                {READING_LABELS[reading.kind]}
               </span>
             </div>
             <h1 tabIndex={-1}>{reading.title}</h1>

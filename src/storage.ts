@@ -2,6 +2,7 @@ import {
   BOOK_DESIGN_COUNT,
   MARKERS,
   READING_ACTIONS,
+  READING_KINDS,
   initialLibrary,
   type LibraryState,
   type Passage,
@@ -17,7 +18,7 @@ const validReading = (value: unknown): value is Reading =>
   typeof value.title === "string" &&
   typeof value.author === "string" &&
   typeof value.description === "string" &&
-  ["sample", "link", "pdf", "text"].includes(String(value.kind)) &&
+  (READING_KINDS as readonly string[]).includes(String(value.kind)) &&
   (value.location === undefined || typeof value.location === "string") &&
   (value.addedAt === undefined ||
     (typeof value.addedAt === "number" && Number.isFinite(value.addedAt))) &&

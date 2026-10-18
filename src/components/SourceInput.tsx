@@ -1,5 +1,10 @@
-import { useState, type FormEvent } from "react";
-import { normalizeLink } from "../reading";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  SOURCE_FILE_ACCEPT,
+  normalizeLink,
+  sourceFileKind,
+  unsupportedFileMessage,
+} from "../reading";
 import { Icon } from "./Icon";
 export type SourceAdd =
   | { kind: "link"; label: string }
@@ -11,7 +16,7 @@ export const SourceInput = ({
 }) => {
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
-  const [pdfError, setPdfError] = useState("");
+  const [fileError, setFileError] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -28,6 +33,50 @@ export const SourceInput = ({
       setBusy(false);
     }
   };
+  const addFiles = async (files: File[]) => {
+    const bad = files.find((file) => !sourceFileKind(file));
+    if (bad) {
+      setFileError(unsupportedFileMessage(bad.name));
+      return;
+    }
+    setFileError("");
+    setBusy(true);
+    try {
+      await onAdd({
+        kind: "file",
+        label: files.map((file) => file.name).join(", "),
+        files,
+      });
+    } catch (error) {
+      setFileError(
+        error instanceof Error
+          ? error.message
+          : files.length > 1
+            ? "Could not read these files."
+            : "Could not read this file.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  useEffect(() => {
+    const paste = (event: ClipboardEvent) => {
+      const image = Array.from(event.clipboardData?.files ?? []).find((file) =>
+        file.type.startsWith("image/"),
+      );
+      if (!image || busy) return;
+      event.preventDefault();
+      void addFiles([
+        new File(
+          [image],
+          `Screenshot ${new Date().toLocaleString()}.${image.type.split("/")[1]}`,
+          { type: image.type },
+        ),
+      ]);
+    };
+    document.addEventListener("paste", paste);
+    return () => document.removeEventListener("paste", paste);
+  });
   return (
     <section
       className="source-section text-center"
@@ -67,44 +116,23 @@ export const SourceInput = ({
         <div className="source-file-row flex items-center justify-between">
           <label className="file-picker flex items-center gap-2">
             <Icon name="file" />
-            <span>Or choose PDFs or text files</span>
+            <span>Or choose files</span>
             <input
               type="file"
-              accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+              accept={SOURCE_FILE_ACCEPT}
               multiple
               disabled={busy}
               aria-label="Choose files"
-              aria-invalid={!!pdfError}
+              aria-invalid={!!fileError}
               aria-describedby={
-                pdfError ? "source-pdf-error source-hint" : "source-hint"
+                fileError ? "source-file-error source-hint" : "source-hint"
               }
               onChange={async (event) => {
-                const files = Array.from(event.target.files ?? []);
-                if (!files.length) return;
-                if (!files.every((file) => /\.(pdf|txt|md)$/i.test(file.name))) {
-                  setPdfError("Choose PDF or text files.");
-                  event.target.value = "";
-                  return;
-                }
-                setPdfError("");
                 const input = event.currentTarget;
-                setBusy(true);
-                try {
-                  await onAdd({
-                    kind: "file",
-                    label: files.map((file) => file.name).join(", "),
-                    files,
-                  });
-                } catch (error) {
-                  setPdfError(
-                    error instanceof Error
-                      ? error.message
-                      : "Could not read these files.",
-                  );
-                } finally {
-                  setBusy(false);
-                  input.value = "";
-                }
+                const files = Array.from(input.files ?? []);
+                if (!files.length) return;
+                await addFiles(files);
+                input.value = "";
               }}
             />
           </label>
@@ -116,15 +144,15 @@ export const SourceInput = ({
           {linkError}
         </p>
       )}
-      {pdfError && (
-        <p id="source-pdf-error" className="input-error" role="alert">
-          {pdfError}
+      {fileError && (
+        <p id="source-file-error" className="input-error" role="alert">
+          {fileError}
         </p>
       )}
       <p id="source-hint" className="demo-hint">
         {busy
           ? "Opening your reading…"
-          : "Read a web article or PDF. Your notes stay with its source."}
+          : "Read an article, Google Doc, PDF, Word file, text, or image. You can also paste a screenshot. Your notes stay with its source."}
       </p>
     </section>
   );
