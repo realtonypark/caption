@@ -1,0 +1,20 @@
+src/components/Reader.test.tsx
+  h_05e5164a29872e 255,260-266
+src/components/SelectionLens.tsx
+  h_05e5164a29872e 10,281,283,285-299,301,304-305,333-334,336-348
+src/index.css
+  h_05e5164a29872e 1154-1172,1607,1811-1813,2065-2067,2069-2072,2074,2076-2093
+src/reading.md
+  h_05e5164a29872e 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "82c0786893d9cb12f4bacc00f54c202f4bf2f7f1",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
