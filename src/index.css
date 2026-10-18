@@ -2067,7 +2067,7 @@ ul {
 }
 .book-actions {
   position: absolute;
-  right: 0;
+  right: -48px;
   top: 50px;
   transform: translateY(-50%);
   display: flex;
@@ -2090,6 +2090,11 @@ ul {
   .book-actions {
     opacity: 1;
     pointer-events: auto;
+  }
+}
+@media (max-width: 859px) {
+  .book-actions {
+    right: 0;
   }
 }
 .book-actions button {
