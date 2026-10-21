@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Caption — your AI reading companion. Every PDF, paper, post and page in one place, read together.">
+<title>Caption — What are we reading?</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%23201819'/%3E%3Cpath d='M28 10C22 4 10 8 9 19c-1 12 11 16 19 9M26 14c-6-5-12 0-12 6s6 11 12 5' fill='none' stroke='%23e4d7ae' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Besley:ital,wght@0,400..900;1,400..900&family=Caveat:wght@400..700&family=Instrument+Serif:ital@0;1&family=Patrick+Hand&family=Reenie+Beanie&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS (Anarlog warm paper + Char notebook) ============ */
+:root{
+  --page:#f2f1ef; --surface:#ffffff; --surface-subtle:#f2f0ed;
+  --ink:#181613; --fg:#332d23; --body-muted:#4f4940; --brown:#756b5d;
+  --grey-600:#868584; --grey-500:#b7b6b5; --border:#e5e5e3; --border-brand:#b7b6b5;
+  --highlight:#fff0b3; --brand-yellow:#ffedbb; --check:#009966; --coral:#f26b64;
+  --card-paper:#fffefa; --card-border:#d6d3cc;
+  --manifesto-paper:#fffaf0; --manifesto-ink:#363029; --manifesto-border:#eadfce;
+  --rule-blue:#a8c4e0; --margin-red:rgba(200,70,70,.45);
+  --ease-out:cubic-bezier(0,0,.2,1); --ease-std:cubic-bezier(.4,0,.2,1); --ease-char:cubic-bezier(.22,1,.36,1);
+  --font-hand:"Caveat",cursive; --font-display:"Besley",Georgia,serif;
+  --font-serif:"Instrument Serif",Georgia,serif; --font-note:"Patrick Hand",cursive; --font-scribble:"Reenie Beanie",cursive;
+  --font-sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:#e7cf8a;color:var(--ink)}
+a{color:inherit}
+button{font:inherit;cursor:pointer;background:none;border:0;color:inherit}
+:focus-visible{outline:2px solid #8a7d69;outline-offset:4px;border-radius:4px}
+.squircle{corner-shape:squircle}
+.col{max-width:700px;margin:0 auto;padding:0 20px}
+@media(min-width:768px){.col{padding:0 32px}}
+.breakout{position:relative;left:50%;transform:translateX(-50%);width:100vw}
+h2.sec{font-family:var(--font-hand);font-size:30px;font-weight:600;line-height:1;color:var(--brown);text-align:center}
+h2.sec.dark{color:var(--fg)}
+.sub{margin:24px auto 0;max-width:42rem;font-size:18px;line-height:32px;color:var(--body-muted);text-align:center}
+.eyebrow{font-family:var(--font-scribble);font-size:24px;color:var(--brown);text-align:center;transform:rotate(-2deg)}
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;background:var(--ink);color:#fff;padding:12px 20px;font-size:14px;font-weight:500;text-decoration:none;transition:background .15s var(--ease-std),transform .25s var(--ease-out),filter .25s var(--ease-out)}
+.pill:hover{background:#4f4940;transform:scale(1.02);filter:brightness(1.05)}
+.pill:active{transform:scale(.98)}
+.pill.light{background:var(--surface-subtle);color:var(--fg)}
+.pill.light:hover{background:#e9e6e0}
+mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hl-yellow{padding:0 .1em;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;background-image:linear-gradient(178deg,transparent .08em,rgba(255,237,187,.85) .08em,rgba(255,237,187,.85) calc(100% - .04em),transparent calc(100% - .04em))}
+.hl-sage{padding:0 .1em;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone;background-image:linear-gradient(177deg,transparent .1em,rgba(210,225,184,.86) .1em,rgba(210,225,184,.86) calc(100% - .06em),transparent calc(100% - .06em))}
+/* pencil filter applied via svg filter ref */
+.pencil{filter:url(#pencil-ink)}
+/* reveal on scroll */
+.rv{opacity:0;transform:translateY(14px);transition:opacity .6s var(--ease-char),transform .6s var(--ease-char)}
+.rv.in{opacity:1;transform:none}
+/* ============ HERO ============ */
+.wordmark{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font-hand);font-size:34px;font-weight:600;line-height:1;color:var(--ink);transition:opacity .15s var(--ease-std)}
+.wordmark:hover{opacity:.72}
+.hero{padding-top:16px;text-align:center}
+.hero h1{font-family:var(--font-hand);font-weight:600;color:var(--ink);font-size:52px;line-height:1.05;text-wrap:balance;margin-top:44px}
+@media(min-width:768px){.hero h1{font-size:76px}}
+@media(min-width:1024px){.hero h1{white-space:nowrap;position:relative;left:50%;transform:translateX(-50%);width:max-content;max-width:none}}
+/* you -> we */
+.youwe{position:relative;display:inline-block;min-width:1.52em;text-align:left}
+.youwe .you{position:relative;display:inline-block}
+.youwe .you::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:.07em;background:var(--coral);border-radius:99px;transform:scaleX(0);transform-origin:left center;animation:strike 7s var(--ease-std) infinite}
+.youwe .we{position:absolute;left:0;top:0;display:inline-block;opacity:0;transform:translateY(8px) rotate(-2deg);color:var(--ink)}
+.youwe .we svg{position:absolute;left:-4%;bottom:-.18em;width:108%;height:.28em;overflow:visible}
+.youwe .we svg path{stroke:var(--coral);stroke-width:5;fill:none;stroke-linecap:round;stroke-dasharray:120;stroke-dashoffset:120;animation:under 7s var(--ease-std) infinite}
+@keyframes strike{0%,18%{transform:scaleX(0)}30%,78%{transform:scaleX(1)}88%,100%{transform:scaleX(0)}}
+@keyframes youfade{0%,30%{opacity:1}42%,78%{opacity:0}90%,100%{opacity:1}}
+@keyframes wein{0%,34%{opacity:0;transform:translateY(10px) rotate(-2deg)}46%,78%{opacity:1;transform:translateY(0) rotate(-2deg)}90%,100%{opacity:0;transform:translateY(8px) rotate(-2deg)}}
+@keyframes under{0%,44%{stroke-dashoffset:120}58%,78%{stroke-dashoffset:0}90%,100%{stroke-dashoffset:120}}
+.youwe .you{animation:youfade 7s var(--ease-std) infinite}
+.youwe .we{animation:wein 7s var(--ease-std) infinite}
+.hero .sub{margin-top:24px}
+.hero-ctas{margin-top:32px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center}
+.hero-note{margin-top:14px;font-size:13px;color:var(--grey-600)}
+/* reader window (Anarlog note window) */
+.reader-wrap{position:relative;margin-top:40px}
+.glow{position:absolute;top:40px;bottom:96px;width:48px;border-radius:999px;background:rgba(24,22,19,.10);filter:blur(24px);pointer-events:none}
+.glow.l{left:32px}.glow.r{right:32px}
+.reader{position:relative;margin:0 auto;max-width:460px;background:#fff;border:1px solid #e5e5e5;border-bottom:0;border-radius:24px;box-shadow:0 24px 70px rgba(24,22,19,.08);overflow:hidden;text-align:left;-webkit-mask-image:linear-gradient(to bottom,black 0,black calc(100% - 5rem),transparent 100%);mask-image:linear-gradient(to bottom,black 0,black calc(100% - 5rem),transparent 100%)}
+.reader-bar{display:flex;align-items:center;gap:8px;padding:12px 16px}
+.dot{width:12px;height:12px;border-radius:50%}
+.reader-body{position:relative;min-height:320px;font-size:14px;color:#404040}
+@media(min-width:640px){.reader-body{min-height:340px}}
+.layer{position:absolute;inset:0;padding:8px 20px 20px;transition:opacity .5s var(--ease-std)}
+.layer.scratch{line-height:1.7}
+.layer.scratch .mess{font-family:var(--font-note);font-size:16px;color:#57534e}
+.layer.polished{opacity:0;pointer-events:none}
+.layer.polished h4{font-size:13px;font-weight:600;color:#44403b;margin:10px 0 6px}
+.layer.polished h4:first-child{margin-top:2px}
+.layer.polished li{margin-left:18px;margin-bottom:6px;line-height:1.55;color:#404040}
+.step{opacity:0;transition:opacity .5s var(--ease-std)}
+.step.on{opacity:1}
+.caret{display:inline-block;width:2px;height:1em;background:#404040;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.margin-note{margin-top:12px;border-left:3px solid var(--brand-yellow);background:#fffdf4;border-radius:0 10px 10px 0;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--fg)}
+.margin-note b{color:var(--ink)}
+.reader-fade{position:absolute;left:0;right:0;bottom:0;height:112px;background:linear-gradient(to top,#fff,transparent);pointer-events:none}
+.wave{display:inline-flex;gap:2px;align-items:center;height:14px;margin-left:auto}
+.wave i{display:block;width:2px;height:10px;background:#f87171;border-radius:99px;transform-origin:center;animation:dance 1s ease-in-out infinite}
+.wave i:nth-child(2){animation-delay:.15s}.wave i:nth-child(3){animation-delay:.3s}.wave i:nth-child(4){animation-delay:.45s}
+@keyframes dance{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.spin{width:12px;height:12px;border:2px solid #d6d3cc;border-top-color:#737373;border-radius:50%;margin-left:auto;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+/* ============ SOURCE WALL ============ */
+.wall{position:relative;margin-top:8px}
+.wall-label{font-family:var(--font-scribble);font-size:25px;transform:rotate(-3deg);text-align:center;color:#0a0a0a}
+.marquee{overflow:hidden;background:#fff;border-block:1px solid var(--border);margin-top:14px;position:relative}
+.marquee-track{display:flex;width:max-content;animation:scroll 36s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes scroll{to{transform:translateX(-50%)}}
+.mgroup{display:flex;align-items:center;gap:56px;padding:16px 28px;flex-shrink:0}
+.mitem{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:var(--fg);opacity:.6;filter:grayscale(1);transition:opacity .2s,filter .2s;white-space:nowrap}
+.mitem:hover{opacity:1;filter:none}
+.mitem .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
+/* ============ NOTEBOOK / PROBLEM ============ */
+.notebook{position:relative;padding:96px 20px;overflow:hidden;background:#fff}
+.paper-bg{position:absolute;inset:0;opacity:.7;pointer-events:none;background-image:linear-gradient(to right,transparent clamp(.75rem,calc(50% - 21rem),calc(100% - .75rem)),var(--margin-red) clamp(.75rem,calc(50% - 21rem),calc(100% - .75rem)),var(--margin-red) calc(clamp(.75rem,calc(50% - 21rem),calc(100% - .75rem)) + 1.5px),transparent calc(clamp(.75rem,calc(50% - 21rem),calc(100% - .75rem)) + 1.5px)),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='32'><line x1='0' y1='31.5' x2='100' y2='31.5' stroke='%23a8c4e0' stroke-width='1' opacity='.5'/></svg>");background-repeat:no-repeat,repeat;background-size:100% 100%,100px 32px;-webkit-mask-image:linear-gradient(to bottom,transparent,black 14%,black 86%,transparent);mask-image:linear-gradient(to bottom,transparent,black 14%,black 86%,transparent)}
+.clutter{position:absolute;width:212px;background:#fff;border-radius:22px;box-shadow:0 0 0 1px var(--border),0 18px 40px rgba(24,22,19,.08);padding:14px;font-size:12px;line-height:1.5;color:var(--body-muted);z-index:1;transition:filter .18s,opacity .18s}
+@media(max-width:1023px){.clutter{display:none}}
+.clutter b{color:var(--ink);font-size:12.5px}
+.nb-col{position:relative;z-index:2;max-width:640px;margin:0 auto}
+.nb-col h2{font-family:var(--font-display);font-weight:500;font-size:clamp(32px,5vw,52px);line-height:1.3;letter-spacing:-.025em;color:var(--fg);text-wrap:balance}
+.nb-col p{font-family:var(--font-serif);font-size:19px;line-height:1.65;color:var(--fg);margin-top:24px;text-wrap:pretty}
+.artword{font-family:var(--font-note);font-size:1.18em;line-height:.86;display:inline-block;cursor:pointer;border-radius:4px;padding:0 .04em;transition:background .15s}
+.artword:hover,.artword:focus-visible{background:#fff3c4}
+.gather{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.gchip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--fg);box-shadow:0 3px 10px rgba(24,22,19,.04);animation:bob 4s ease-in-out infinite}
+.gchip:nth-child(2n){animation-delay:.7s}.gchip:nth-child(3n){animation-delay:1.3s}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-5px) rotate(var(--r,0deg))}}
+/* ============ FEATURES 3-COL ============ */
+.feats{padding:80px 0 8px;text-align:center}
+.feat-grid{max-width:1120px;margin:28px auto 0;display:grid;gap:16px;padding:0 20px}
+@media(min-width:768px){.feat-grid{display:flex;justify-content:space-between}.feat{width:31%}}
+.feat{padding:12px 24px;text-align:center}
+.feat h3{margin-top:20px;font-size:16px;font-weight:600;color:var(--body-muted);font-family:var(--font-sans)}
+.feat p{margin:6px auto 0;max-width:17rem;font-size:14px;line-height:24px;color:var(--body-muted)}
+.stage{height:112px;display:flex;align-items:center;justify-content:center;position:relative}
+.filefan{position:relative;width:170px;height:100px}
+.filefan span{position:absolute;left:50%;top:8px;width:42px;height:56px;margin-left:-21px;background:#fff;border:1.5px solid var(--card-border);border-radius:6px;box-shadow:0 6px 14px rgba(24,22,19,.07);display:grid;place-items:center;font-size:8px;font-weight:800;transition:transform .3s var(--ease-out)}
+.filefan span:nth-child(1){transform:rotate(-8deg) translateX(-42px)}
+.filefan span:nth-child(2){transform:rotate(3deg) translateX(-14px)}
+.filefan span:nth-child(3){transform:rotate(-3deg) translateX(14px);background:#fffdf4}
+.filefan span:nth-child(4){transform:rotate(8deg) translateX(42px)}
+.feat:hover .filefan span:nth-child(1){transform:rotate(-13deg) translateX(-46px) translateY(-4px)}
+.feat:hover .filefan span:nth-child(4){transform:rotate(13deg) translateX(46px) translateY(-4px)}
+.aicards{position:relative;width:176px;height:100px}
+.aicard{position:absolute;left:50%;top:6px;width:54px;height:74px;margin-left:-27px;background:var(--card-paper);border:1.5px solid var(--card-border);border-radius:6px;box-shadow:0 10px 18px rgba(24,22,19,.14);display:grid;place-items:center;font-family:Georgia,serif;font-weight:700;font-size:11px;animation:shuffle 9s ease-in-out infinite}
+.aicard small{position:absolute;font-size:8px;color:var(--grey-600);font-family:var(--font-sans);font-weight:600}
+@keyframes shuffle{0%,26%{transform:translate(20px,5px) rotate(8deg) scale(1);z-index:3}36%,60%{transform:translate(-22px,11px) rotate(-14deg) scale(.92);z-index:1}70%,94%{transform:translate(-2px,3px) rotate(-5deg) scale(.96);z-index:2}100%{transform:translate(20px,5px) rotate(8deg) scale(1);z-index:3}}
+.aicard.k{animation-delay:-3s}.aicard.o{animation-delay:-6s}
+.margin-demo{width:190px;text-align:left;font-size:11.5px;line-height:1.6;color:var(--body-muted);background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px;box-shadow:0 3px 10px rgba(24,22,19,.04)}
+.margin-demo .hl{background:linear-gradient(transparent 55%,var(--highlight) 55%);padding:0 2px;color:var(--ink);font-weight:600}
+.margin-demo .note{margin-top:7px;border-top:1px dashed var(--border);padding-top:7px;color:var(--brown)}
+/* ============ RIBBON ============ */
+.ribbon-sec{padding:72px 0 8px;text-align:center;overflow:hidden}
+.ribbon-stage{position:relative;height:260px;margin-top:8px;overflow:hidden}
+.ribbon-svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(1360px,150vw);min-width:900px;overflow:visible}
+.ribbon-track{stroke:var(--fg);stroke-width:30;fill:none;stroke-linecap:round;opacity:.92}
+.rtxt{font-family:var(--font-sans);dominant-baseline:middle}
+.speech-btn{position:absolute;top:49%;left:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:12px;min-width:248px;height:72px;padding:0 22px;justify-content:center;background:#fff;color:var(--fg);border:3px solid var(--fg);border-radius:999px;font-size:15px;font-weight:700;text-decoration:none;transition:background .14s linear,color .14s linear;z-index:3}
+.speech-btn:hover,.speech-btn:focus-visible{background:var(--fg);color:#fff}
+.bars{display:flex;gap:5px;align-items:center;height:32px}
+.bars i{display:block;width:4px;border-radius:99px;background:currentColor;animation:pulse .92s ease-in-out infinite}
+.bars i:nth-child(1),.bars i:nth-child(3){height:18px}.bars i:nth-child(2){height:32px;animation-delay:.12s}.bars i:nth-child(3){animation-delay:.24s}
+@keyframes pulse{0%,100%{transform:scaleY(.65)}50%{transform:scaleY(1.08)}}
+/* ============ DEMO STACK ============ */
+.demo-sec{padding:84px 0 20px}
+.demo-grid{max-width:80rem;margin:0 auto;padding:0 24px;display:grid;gap:48px;align-items:center}
+@media(min-width:1024px){.demo-grid{grid-template-columns:1fr 1fr;padding:0 64px}}
+.demo-copy h2{font-family:var(--font-display);font-weight:500;font-size:clamp(34px,4.4vw,56px);line-height:1.25;color:var(--fg);text-wrap:balance}
+.demo-copy p{margin-top:20px;font-size:17px;line-height:1.65;color:var(--body-muted);max-width:30rem}
+.annot{font-family:var(--font-scribble);font-size:26px;color:#111;transform:rotate(-3deg);display:inline-block}
+.stack-wrap{width:min(100%,448px);margin:0 auto;position:relative}
+.stack-frame{position:relative;height:440px}
+@media(max-width:640px){.stack-frame{height:460px}}
+.scard{position:absolute;inset:0;background:#fff;border-radius:22px;box-shadow:0 0 0 1px var(--border),0 18px 44px rgba(24,22,19,.07);overflow:hidden;transition:transform .35s cubic-bezier(.32,.72,0,1),opacity .35s;padding:22px;text-align:left}
+.scard h4{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-600);font-weight:700}
+.scard h5{font-family:var(--font-serif);font-size:24px;font-weight:400;color:var(--fg);margin-top:8px;line-height:1.25}
+.scard p,.scard li{font-size:14.5px;line-height:1.65;color:var(--body-muted)}
+.scard ul{margin:12px 0 0 18px}
+.scard li{margin-bottom:7px}
+.qbox{margin-top:14px;background:var(--surface-subtle);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.6;color:var(--fg)}
+.qbox b{color:var(--ink)}
+.chiprow{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.chiprow span{font-size:11px;font-weight:700;border:1px solid var(--border);border-radius:999px;padding:4px 9px;color:var(--brown);background:#fff}
+.checkline{display:flex;gap:9px;align-items:flex-start;margin-top:10px;font-size:14px;color:var(--fg)}
+.box{flex:0 0 auto;width:19px;height:19px;border:2px solid var(--fg);border-radius:5px;margin-top:2px;position:relative}
+.box.done::after{content:"✓";position:absolute;inset:-4px 0 0 2px;color:var(--coral);font-weight:800;font-size:16px}
+.strike{text-decoration:line-through;opacity:.5}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.tab{text-align:left;padding:8px 2px;border-radius:6px}
+.tab .track{display:block;height:3px;border-radius:99px;background:rgba(51,45,35,.15);overflow:hidden}
+.tab .fill{display:block;height:100%;background:var(--fg);transform:scaleX(0);transform-origin:left}
+.tab.on .fill{animation:prog var(--dur,6s) linear forwards}
+.tab.done .fill{transform:scaleX(1)}
+.tab .lbl{display:block;margin-top:8px;font-size:10.5px;line-height:1.35;color:rgba(51,45,35,.65);font-family:ui-monospace,monospace}
+.tab.on .lbl{color:var(--fg);font-weight:700}
+@keyframes prog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+/* ============ TESTIMONIALS ============ */
+.testi{padding:84px 0 20px;text-align:center}
+.tstage{position:relative;max-width:980px;margin:28px auto 0;height:330px}
+@media(max-width:640px){.tstage{height:360px}}
+.tcta{position:absolute;left:50%;top:24px;transform:translateX(-50%);width:380px;max-width:calc(100% - 40px)}
+.tcta .big{font-family:var(--font-hand);font-size:32px;font-weight:600}
+.tcard{position:absolute;top:0;left:50%;width:380px;max-width:calc(100% - 40px);background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;text-align:left;transition:transform .5s var(--ease-char),box-shadow .5s var(--ease-char);transform-origin:top center;user-select:none}
+.tcard .who{display:flex;align-items:center;gap:10px}
+.avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px;flex:0 0 auto}
+.tcard blockquote{margin-top:12px;font-size:17px;line-height:1.3;font-weight:600;color:var(--ink);text-wrap:balance}
+.tcard footer{margin-top:12px;border-top:1px solid #ede7dc;padding-top:10px;font-size:12px;color:var(--brown)}
+/* ============ OPEN SOURCE + MANIFESTO + CLOSING + FOOTER ============ */
+.os{padding:56px 0;text-align:center}
+.ghbtn{display:inline-flex;align-items:center;gap:8px;margin-top:24px;border:1px solid #d4d4d4;background:#fff;border-radius:999px;padding:12px 20px;font-size:14px;font-weight:500;color:#171717;text-decoration:none;transition:all .15s var(--ease-std)}
+.ghbtn:hover{background:#171717;color:#fff;border-color:#171717}
+.letter-wrap{padding:90px 20px 60px}
+.letter{max-width:48rem;margin:0 auto;background-color:#fffaf0;background-image:linear-gradient(115deg,rgba(255,250,240,.92),rgba(246,236,218,.82));border:1px solid var(--manifesto-border);border-radius:3px;box-shadow:0 18px 50px rgba(68,54,36,.12);padding:40px 32px;color:var(--manifesto-ink);font-size:18px;line-height:32px}
+@media(min-width:640px){.letter{padding:48px 40px}}
+.letter p+p{margin-top:24px}
+.sign{margin-top:36px;display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.04em;color:var(--brown)}
+.sign .av{width:30px;height:30px;border-radius:50%;background:var(--fg);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;transition:transform .15s}
+.sign .av:hover{transform:translateY(-2px)}
+.closing{padding:110px 20px;text-align:center;background:#fff}
+.closing h2{font-family:var(--font-display);font-weight:500;font-size:clamp(42px,7vw,72px);line-height:1.3;color:var(--fg)}
+.inkbox{display:inline-block;width:.56em;height:.56em;border:.06em solid currentColor;border-radius:.11em;transform:translateY(.12em);position:relative;margin:0 .02em}
+.inkbox svg{position:absolute;inset:8%;width:84%;height:84%}
+.inkbox svg path{stroke:var(--coral);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:30;stroke-dashoffset:30}
+.closing.in .inkbox svg path{animation:draw .55s var(--ease-char) .3s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.sitefoot{background:#fff;padding:48px 24px 32px;border-top:1px solid var(--border)}
+@media(min-width:640px){.sitefoot{padding:48px 82px 32px}}
+.giant{display:block;font-family:var(--font-hand);font-weight:600;font-size:clamp(90px,17vw,220px);line-height:.9;text-align:center;color:var(--fg);opacity:.14;text-decoration:none;transition:color .15s,opacity .15s}
+.giant:hover{color:#000;opacity:.22}
+.footrow{margin-top:36px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end;color:var(--grey-500);font-size:14px}
+.footrow a{text-decoration:none}.footrow a:hover{color:var(--ink)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}.marquee-track{animation:none}.youwe .we{opacity:1;position:static}.youwe .you{display:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<filter id="pencil-ink" x="-45%" y="-90%" width="190%" height="280%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="2.15 0.72" numOctaves="5" seed="7" result="fiber"/>
+<feDisplacementMap in="SourceGraphic" in2="fiber" scale="2.35" xChannelSelector="R" yChannelSelector="G" result="wobble"/>
+<feTurbulence type="fractalNoise" baseFrequency="4.8" numOctaves="3" seed="3" result="dust"/>
+<feColorMatrix in="dust" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .9 0" result="dustA"/>
+<feComposite in="wobble" in2="dustA" operator="in" result="dry"/>
+<feBlend in="wobble" in2="dry" mode="multiply" result="graphite"/>
+<feGaussianBlur in="graphite" stdDeviation="0.32"/>
+</filter></defs></svg>
+
+<div class="col">
+  <!-- HERO -->
+  <section class="hero" aria-label="Caption introduction">
+    <a class="wordmark pencil" href="./" aria-label="Caption home">
+      <svg width="27" height="32" viewBox="0 0 30 36" fill="none" aria-hidden="true"><path d="M24 7C20 2 8 3 5 10c-4 10 0 21 9 22 4 1 8-1 11-4M22 11c-5-5-12-2-13 5-1 8 3 13 9 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M22 4v13l3-3 3 3V5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span>Caption</span>
+    </a>
+    <h1>What are <span class="youwe"><span class="you">you</span><span class="we">we<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 Q 30 3 52 7 T 98 6"/></svg></span></span> reading?</h1>
+    <p class="sub">Your PDFs, papers, posts and pages live in ten places. Your ideas about them live in ten more. Caption brings every source — and every thought — into one reading companion that <span class="hl-yellow">thinks with you</span>.</p>
+    <div class="hero-ctas">
+      <a class="pill" href="#demo">Start reading together <span aria-hidden="true">→</span></a>
+      <a class="pill light" href="#how">See how it works</a>
+    </div>
+    <p class="hero-note">Free in your browser · No download · Your library stays yours</p>
+
+    <div class="reader-wrap" aria-label="Demo: messy highlights become clear notes">
+      <div class="glow l"></div><div class="glow r"></div>
+      <div class="reader squircle">
+        <div class="reader-bar">
+          <span class="dot" style="background:#ff6467"></span><span class="dot" style="background:#fdc700"></span><span class="dot" style="background:#05df72"></span>
+          <span id="reader-status" style="margin-left:auto;display:flex;align-items:center"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span>
+        </div>
+        <div class="reader-body">
+          <div class="layer scratch" id="layer-scratch">
+            <p class="mess">attention is all u need — skim intro!!</p>
+            <p class="mess" style="margin-top:10px">transformer?? self-attn = weighted sum…</p>
+            <p class="mess" style="margin-top:10px">why no recurrence → parallel + long range</p>
+            <p class="mess" style="margin-top:10px"><span id="type1"></span><span class="caret" id="caret1"></span></p>
+            <p class="mess"><span id="type2"></span><span class="caret" id="caret2" style="opacity:0"></span></p>
+            <div style="margin-top:14px;display:flex;gap:6px;flex-wrap:wrap">
+              <span style="font-size:11px;border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--grey-600)">paper.pdf · p.3</span>
+              <span style="font-size:11px;border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--grey-600)">3 highlights</span>
+            </div>
+          </div>
+          <div class="layer polished" id="layer-polished">
+            <h4 class="step" data-step="1">The core idea</h4>
+            <ul><li class="step" data-step="1">Attention replaces recurrence: every word looks directly at every other word.</li>
+            <li class="step" data-step="2">That makes training parallel — and long-range links cheap.</li></ul>
+            <h4 class="step" data-step="3">Why it matters</h4>
+            <ul><li class="step" data-step="3">Context is not a window you slide. It is a web you query.</li>
+            <li class="step" data-step="4">Your note: “So meaning comes from relations, not order alone?”</li></ul>
+            <div class="margin-note step" data-step="5"><b>Caption · in the margin</b><br>Good challenge. Order still enters through position codes — ask me to test that against §3.5.</div>
+          </div>
+        </div>
+        <div class="reader-fade"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- SOURCE WALL -->
+<div class="wall" aria-label="Every source, one shelf">
+  <p class="wall-label pencil">every source, one shelf ↓</p>
+  <div class="marquee" aria-hidden="true"><div class="marquee-track" id="mtrack"></div></div>
+</div>
+
+<!-- PROBLEM: notebook manifesto (Char) -->
+<section class="notebook" aria-labelledby="prob-h">
+  <div class="paper-bg"></div>
+  <div class="clutter" style="left:3%;top:15%;transform:rotate(-7deg)"><b>📄 Paper.pdf</b><br>“highlight p.4!!”<br><span style="color:var(--grey-500)">Downloads · 3 weeks ago</span></div>
+  <div class="clutter" style="right:3%;top:22%;transform:rotate(4deg)"><b>🔖 Blog post</b><br>47 tabs open<br><span style="color:var(--grey-500)">“read later” · never</span></div>
+  <div class="clutter" style="left:4%;top:52%;transform:rotate(-2deg)"><b>💬 Message to self</b><br>“that article on attention…”<br><span style="color:var(--grey-500)">Which one?</span></div>
+  <div class="clutter" style="right:4%;top:55%;transform:rotate(6deg)"><b>📝 Doc — notes v4</b><br>idea?? check p.12<br><span style="color:var(--grey-500)">2 editing now · you + past you</span></div>
+  <div class="nb-col rv">
+    <h2 id="prob-h">Reading is scattered.<br>So thinking gets scattered.</h2>
+    <p>A <button class="artword" style="transform:rotate(-1.8deg)" data-art="pdf">PDF</button> in Downloads. A <button class="artword" style="transform:rotate(1.4deg)" data-art="blog">blog post</button> in tab 47. A paper, a news story, a <button class="artword" style="transform:rotate(1.8deg)" data-art="doc">Word doc</button> — and your best ideas split across highlights, sticky notes and a <button class="artword" style="transform:rotate(-2.2deg)" data-art="dm">message to yourself</button> you will never find again.</p>
+    <p><span class="hl-yellow">Your brain is still the manager</span> of all of it. Holding the thread. Remembering where the good line was. Doing the joining-up alone.</p>
+    <p><span class="hl-sage">Caption is for readers who want a second mind in the margin</span> — one shelf for every source, and a companion that helps you question, connect and keep what you read.</p>
+    <div class="gather" id="gather" aria-label="Sources gathered into Caption">
+      <span class="gchip" style="--r:-2deg">📕 PDF</span><span class="gchip" style="--r:1deg">🎓 Academic paper</span><span class="gchip" style="--r:-1deg">📰 News</span><span class="gchip" style="--r:2deg">✍️ Blog post</span><span class="gchip" style="--r:-2deg">🌐 Web article</span><span class="gchip" style="--r:1deg">📘 Word file</span><span class="gchip" style="--r:0deg">→ one library</span>
+    </div>
+    <p id="art-note" style="font-family:var(--font-scribble);font-size:22px;color:var(--brown);min-height:28px" aria-live="polite"></p>
+  </div>
+</section>
+
+<div class="col">
+  <!-- FEATURES -->
+  <section class="feats rv" id="how" aria-labelledby="feat-h">
+    <h2 class="sec" id="feat-h">One shelf. One margin. One thread.</h2>
+    <p class="sub">Caption works quietly in your browser — no new app to feed, no library to rebuild by hand.</p>
+  </section>
+</div>
+<div class="feat-grid">
+  <article class="feat rv">
+    <div class="stage"><div class="filefan" aria-hidden="true"><span style="color:#c0392b">PDF</span><span style="color:#7c5c00">DOC</span><span style="color:#1d6fb8">WEB</span><span style="color:#6b4fa1">PAPER</span></div></div>
+    <h3>Bring every source</h3><p>Drop a link or a file. PDFs, papers, posts, news and Word docs land on the same shelf, in reading order.</p>
+  </article>
+  <article class="feat rv">
+    <div class="stage"><div class="margin-demo" aria-hidden="true"><span class="hl">“Meaning comes from relations…”</span><div class="note">↳ Caption: relations to what? Compare with your note on p.2 →</div></div></div>
+    <h3>Read in the margin</h3><p>Highlight, question and argue — in place. Caption answers from the page, cites the passage, and pushes back.</p>
+  </article>
+  <article class="feat rv">
+    <div class="stage"><div class="aicards" aria-hidden="true"><div class="aicard">Q<small style="top:4px;left:5px">ask</small></div><div class="aicard k">C<small style="top:4px;left:5px">connect</small></div><div class="aicard o">K<small style="top:4px;left:5px">keep</small></div></div></div>
+    <h3>Keep every insight</h3><p>Notes gather themselves by source in your notepad. Nothing you understood gets lost in a tab again.</p>
+  </article>
+</div>
+
+<!-- RIBBON -->
+<section class="ribbon-sec" aria-label="From skim to understanding">
+  <div class="col"><h2 class="sec dark"><span style="opacity:.45">Stop skimming alone.</span> Start thinking together.</h2>
+  <p class="sub" style="max-width:36rem">Caption reads the filler out and the meaning in — summaries that keep the argument, not just the gist.</p></div>
+  <div class="ribbon-stage" aria-hidden="true">
+    <svg class="ribbon-svg" viewBox="0 0 1180 360"><path class="ribbon-track" d="M-80 226 C -10 226 20 184 90 184 C 160 184 170 266 240 250 C 310 234 330 156 400 166 C 442 172 466 176 500 176 L 1180 150"/><text class="rtxt" fill="#fff" font-size="20" font-weight="600"><textPath href="#rp" id="ribbon-text">Highlight anything → Ask why → Test the claim → Keep the insight → &nbsp; Highlight anything → Ask why → Test the claim → Keep the insight →</textPath></text><path id="rp" d="M-40 190 L 1220 160" fill="none"/></svg>
+    <a class="speech-btn" href="#demo"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span> Try the margin</a>
+  </div>
+</section>
+
+<!-- DEMO STACK (Char) -->
+<section class="demo-sec" id="demo" aria-labelledby="demo-h">
+  <div class="demo-grid">
+    <div class="demo-copy rv">
+      <span class="annot pencil">your notes, on steroids! ↓</span>
+      <h2 id="demo-h" style="margin-top:14px">An AI reading companion that gets things understood.</h2>
+      <p>Watch a reading session do the joining-up for you. Four moments, on loop — or tap a card to jump in. This is showing, not telling: every scene below is the product, animated.</p>
+      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap"><a class="pill" href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">Open Caption <span aria-hidden="true">→</span></a><a class="pill light" href="#letter">Read the letter</a></div>
+      <p style="font-size:13px;color:var(--grey-600);margin-top:16px">Demo timings shortened for the page. In Caption, answers stream with citations to the exact passage.</p>
+    </div>
+    <div class="stack-wrap rv">
+      <div class="stack-frame" id="stack" role="region" aria-label="Caption reading demo"></div>
+      <div class="tabs" id="tabs" role="tablist" aria-label="Demo scenes"></div>
+    </div>
+  </div>
+</section>
+
+<div class="col">
+  <!-- TESTIMONIALS -->
+  <section class="testi rv" aria-labelledby="testi-h">
+    <h2 class="sec" id="testi-h">What readers say</h2>
+    <p class="sub" style="margin-top:16px">It is clear they read closer with Caption. <span style="color:var(--brown)">Tap the front card to shelve it →</span></p>
+    <div class="tstage" id="tstage">
+      <div class="tcta"><p class="big">Try for yourself.</p><a class="pill" href="#demo" style="margin-top:18px">Start reading for free →</a></div>
+    </div>
+  </section>
+  <!-- OPEN SOURCE -->
+  <section class="os rv" aria-labelledby="os-h">
+    <h2 class="sec" id="os-h">Open source by default</h2>
+    <p class="sub">We care about transparency. Caption is open source, so anyone can inspect how your reading and your notes are handled. Your library lives in your browser.</p>
+    <a class="ghbtn" href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer"><svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.16-.89-1.16-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.88 2.34.67.07-.52.28-.88.51-1.08-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> <span id="stars">Star on GitHub</span></a>
+  </section>
+</div>
+
+<!-- MANIFESTO LETTER -->
+<div class="letter-wrap" id="letter">
+  <article class="letter rv" aria-label="A letter to readers">
+    <p>To the people who still read closely,</p>
+    <p>Reading matters more than readers. A reader alone is passive. A companion is something you think with. You stay present and in control while the page is still alive.</p>
+    <p>Most tools ask you to move your thinking into their ecosystem and rules. Your reading should stay in software you control, with a record that works in your browser, on your shelf.</p>
+    <p>Interfaces change. What you understood should remain yours. Highlight it, question it, keep it — <span class="hl-yellow">not in ten scattered places, but in one margin that remembers</span>.</p>
+    <p>Caption is our attempt to build that reading companion.</p>
+    <div class="sign"><span class="av" aria-hidden="true">C</span><span>— the Caption team · <a href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer" style="color:inherit">github.com/realtonypark/caption</a></span></div>
+  </article>
+</div>
+
+<!-- CLOSING -->
+<section class="closing" id="closing" aria-label="Get started">
+  <h2 aria-label="To read, to understood.">To read <span class="inkbox" aria-hidden="true"></span> to underst<span class="inkbox" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12 9 17 20 6" pathLength="30"/></svg></span>d.</h2>
+  <p style="margin-top:20px;font-size:18px;line-height:28px;color:var(--grey-600)">Stop growing your “read later” list.<br>It is time to understand what you read.</p>
+  <a class="pill" href="#demo" style="margin-top:28px">Start reading together <span aria-hidden="true">→</span></a>
+  <p style="margin-top:14px;font-size:13px;color:var(--grey-500)">What are <span style="text-decoration:line-through;text-decoration-color:var(--coral);text-decoration-thickness:2px">you</span> <span style="border-bottom:3px solid var(--coral);font-weight:700;color:var(--ink)">we</span> reading next?</p>
+</section>
+
+<script>
+(function(){
+"use strict";
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* ---- source marquee (Anarlog 36s crawl, duplicated for -50% loop) ---- */
+var sources=[["PDF","#c0392b"],["PAPER","#6b4fa1"],["BLOG","#b7791f"],["NEWS","#1d6fb8"],["WEB","#0f766e"],["DOC","#44546a"],["BOOK","#7c2d12"],["ESSAY","#9d2449"]];
+var group = sources.map(function(s){return '<span class="mitem"><span class="ic" style="background:'+s[1]+'">'+s[0].slice(0,2)+'</span>'+s[0]+'</span>'}).join("");
+document.getElementById("mtrack").innerHTML = '<div class="mgroup">'+group+'</div><div class="mgroup" aria-hidden="true">'+group+'</div>';
+/* ---- hero reader loop (Anarlog timeline) ---- */
+var t1=document.getElementById("type1"), t2=document.getElementById("type2"),
+    c1=document.getElementById("caret1"), c2=document.getElementById("caret2"),
+    scratch=document.getElementById("layer-scratch"), polished=document.getElementById("layer-polished"),
+    status=document.getElementById("reader-status"), timers=[];
+function later(fn,ms){timers.push(setTimeout(fn,ms))}
+function waveHTML(){return '<span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>'}
+function typeInto(el,text,done){var i=0;(function tick(){el.textContent=text.slice(0,++i);if(i<text.length)later(tick,50);else if(done)done()})()}
+function heroLoop(){
+  timers.forEach(clearTimeout); timers=[];
+  t1.textContent=""; t2.textContent=""; c1.style.opacity=1; c2.style.opacity=0;
+  scratch.style.opacity=1; polished.style.opacity=0; polished.style.pointerEvents="none";
+  document.querySelectorAll(".step").forEach(function(s){s.classList.remove("on")});
+  status.innerHTML=waveHTML();
+  if(reduced){polished.style.opacity=1;scratch.style.opacity=0;document.querySelectorAll(".step").forEach(function(s){s.classList.add("on")});status.innerHTML="";return}
+  later(function(){typeInto(t1,"pos encoding?? order w/o order",function(){c1.style.opacity=0;c2.style.opacity=1;typeInto(t2,"cf. my note p.2 — connect!",function(){c2.style.opacity=0})})},500);
+  later(function(){scratch.style.opacity=0;polished.style.opacity=1;polished.style.pointerEvents="auto";status.innerHTML='<span class="spin" aria-hidden="true"></span>';
+    [1,2,3,4,5].forEach(function(n,i){later(function(){document.querySelectorAll('[data-step="'+n+'"]').forEach(function(s){s.classList.add("on")});if(n===5)status.innerHTML=""}, i*800)})},3950);
+  later(heroLoop,11500);
+}
+heroLoop();
+/* ---- scattered-source words ---- */
+var notes={pdf:"PDF → on the shelf, p.4 highlight kept ↳",blog:"Blog post → saved from tab 47, at last ↳",doc:"Word doc → same shelf, same margin ↳",dm:"That message → now a note on the passage itself ↳"};
+var artNote=document.getElementById("art-note");
+document.querySelectorAll(".artword").forEach(function(b){
+  function show(){artNote.textContent=notes[b.dataset.art]||""}
+  b.addEventListener("mouseenter",show); b.addEventListener("focus",show); b.addEventListener("click",show);
+});
+/* ---- demo stack (Char scenes, shortened) ---- */
+var scenes=[
+ {tab:"Gather",dur:6000,html:'<h4>Scene 1 · Gather</h4><h5>Ten places become one shelf.</h5><div class="chiprow"><span>📕 paper.pdf</span><span>✍️ blog</span><span>📰 news</span><span>📘 report.docx</span><span>🌐 article</span></div><p style="margin-top:14px">Drop a link or a file. Caption shelves it in reading order — figures, footnotes and all — ready to read, not just to store.</p><div class="qbox"><b>Caption</b> · 5 sources shelved. Start with the paper? Your highlight from March is on p.4.</div>'},
+ {tab:"Understand",dur:7000,html:'<h4>Scene 2 · Understand</h4><h5>“Attention is all you need” — with a second mind.</h5><p style="margin-top:10px">You highlight: <mark>“meaning comes from relations, not order alone.”</mark></p><div class="qbox"><b>You ask:</b> “Then why position codes?”<br><b>Caption:</b> Order sneaks back in through positions (§3.5). Without them, “dog bites man” = “man bites dog”. <span style="color:var(--brown)">Try a counterexample →</span></div><div class="chiprow"><span>cited · §3.5</span><span>your note · p.2</span></div>'},
+ {tab:"Question",dur:7000,html:'<h4>Scene 3 · Question</h4><h5>Critical thinking, not just summaries.</h5><ul><li>What would prove this claim <i>wrong</i>?</li><li>Which step does the author assume, not show?</li><li>Does the news version match the paper?</li></ul><div class="qbox"><b>Caption</b> · The blog says “proven”. The paper says “suggests” (p.7). That gap is worth a note.</div><div class="chiprow"><span>fact-check</span><span>compare sources</span><span>steelman it</span></div>'},
+ {tab:"Remember",dur:6000,html:'<h4>Scene 4 · Remember</h4><h5>Insights gather themselves.</h5><div class="checkline"><span class="box done"></span><span class="strike">Re-find the p.4 highlight</span></div><div class="checkline"><span class="box done"></span><span class="strike">Connect blog claim to paper §3.5</span></div><div class="checkline"><span class="box done"></span><span>Notepad: 3 insights, grouped by source, ready to export</span></div><div class="qbox"><b>Your notepad</b> · “Relations carry meaning — but order rides in on positions.” <span style="color:var(--brown)">Yours, kept.</span></div>'}
+];
+var stack=document.getElementById("stack"), tabs=document.getElementById("tabs"), cur=0, timer=null;
+var tilts=[-1.6,1.3,-0.9,1.8];
+scenes.forEach(function(s,i){
+  var card=document.createElement("div"); card.className="scard"; card.innerHTML=s.html; card.dataset.i=i;
+  card.setAttribute("role","button"); card.setAttribute("tabindex","0"); card.setAttribute("aria-label","Show scene: "+s.tab);
+  card.addEventListener("click",function(){if(i!==cur)go(i)});
+  card.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();if(i!==cur)go(i)}});
+  stack.appendChild(card);
+  var tab=document.createElement("button"); tab.className="tab"; tab.setAttribute("role","tab");
+  tab.innerHTML='<span class="track"><span class="fill"></span></span><span class="lbl">'+s.tab+'</span>';
+  tab.addEventListener("click",function(){go(i)}); tabs.appendChild(tab);
+});
+function layout(){
+  var cards=stack.children;
+  for(var i=0;i<cards.length;i++){
+    var rel=(i-cur+scenes.length)%scenes.length, depth=Math.min(rel===0?0:(scenes.length-rel<=2?scenes.length-rel:3),2), idx;
+    /* front = cur; backs peek one each side like Char (depth 1,2) */
+    var order=[]; for(var k=0;k<scenes.length;k++)order.push((cur+k)%scenes.length);
+    var pos=order.indexOf(i); /* 0 front, 1.. behind */
+    var d=Math.min(pos,2);
+    var x=d===0?"0%":(d===1?"-6%":"8%"), sc=1-d*0.045, rot=d===0?0:tilts[i];
+    cards[i].style.transform="translateX("+x+") rotate("+rot+"deg) scale("+sc+")";
+    cards[i].style.zIndex=String(30-d); cards[i].style.opacity=pos>2?"0":"1"; cards[i].style.pointerEvents=pos===0?"none":"auto";
+    cards[i].style.cursor=pos===0?"default":"pointer";
+  }
+  for(var t=0;t<tabs.children.length;t++){
+    tabs.children[t].classList.toggle("on",t===cur); tabs.children[t].classList.toggle("done",t<cur);
+    tabs.children[t].setAttribute("aria-selected",t===cur?"true":"false");
+    tabs.children[t].style.setProperty("--dur",scenes[cur].dur+"ms");
+    var f=tabs.children[t].querySelector(".fill"); f.style.animation="none"; void f.offsetWidth; f.style.animation="";
+  }
+}
+function go(n){cur=n;layout();clearTimeout(timer);if(!reduced)timer=setTimeout(function(){go((cur+1)%scenes.length)},scenes[cur].dur)}
+layout(); if(!reduced)timer=setTimeout(function(){go(1)},scenes[0].dur);
+/* pause demo when offscreen */
+if("IntersectionObserver" in window){new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){if(!timer&&!reduced)timer=setTimeout(function(){go((cur+1)%scenes.length)},2000)}else{clearTimeout(timer);timer=null}})},{threshold:.15}).observe(stack)}
+/* ---- testimonials (Anarlog click-to-park) ---- */
+var people=[
+ ["MR","#7c5c00","Maya R.","PhD reader","Caption is where my papers finally <mark>argue with each other</mark> — and I keep the winner."],
+ ["JK","#1d6fb8","Jonas K.","Newsletter writer","I stopped losing the good line. Every highlight lands in <mark>one notepad</mark>."],
+ ["AS","#6b4fa1","Ana S.","Policy analyst","It cites the passage, then asks what would prove it wrong. That is <mark>critical thinking</mark>, not autocomplete."],
+ ["TO","#0f766e","Tom O.","Student","Blog, PDF, lecture doc — <mark>one shelf</mark>. My notes stopped scattering."],
+ ["LP","#9d2449","Lena P.","Journalist","The margin remembers what tab 47 never did. <mark>Caption</mark> is my second read."]];
+var tstage=document.getElementById("tstage"), moved=[];
+var restD=[[-1.5,0,34,1],[1.7,10,44,.985],[-2.2,-11,54,.97],[2.8,14,64,.955],[-3,-14,74,.94]];
+var parkD=[[-7,-430,0,.9],[7,430,8,.9],[6,-420,132,.88],[-6,420,140,.88],[-3,-430,74,.82]];
+people.forEach(function(p,i){
+  var el=document.createElement("article"); el.className="tcard squircle"; el.dataset.i=i;
+  el.setAttribute("tabindex","0"); el.setAttribute("role","button"); el.setAttribute("aria-label","Shelve testimonial from "+p[2]);
+  el.innerHTML='<div class="who"><span class="avatar" style="background:'+p[1]+'">'+p[0]+'</span><span><b style="font-size:14px">'+p[2]+'</b><br><span style="font-size:13px;color:var(--brown)">'+p[3]+'</span></span></div><blockquote>'+p[4]+'</blockquote><footer>'+p[2]+' · reads with Caption</footer>';
+  function move(){if(moved.indexOf(i)>-1)return; moved.push(i); tLayout()}
+  el.addEventListener("click",move);
+  el.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();move()}});
+  tstage.appendChild(el);
+});
+function tLayout(){
+  var cards=tstage.querySelectorAll(".tcard");
+  var remaining=people.map(function(_,i){return i}).filter(function(i){return moved.indexOf(i)===-1});
+  cards.forEach(function(el){
+    var i=+el.dataset.i, mi=moved.indexOf(i);
+    if(mi>-1){var p=parkD[mi%5]; el.style.transform="translate(calc(-50% + "+p[1]+"px), "+p[2]+"px) scale("+p[3]+") rotate("+p[0]+"deg)"; el.style.zIndex=String(20+mi); el.style.boxShadow="0 14px 36px rgba(24,22,19,.10)"; el.style.pointerEvents="none"}
+    else{var pos=remaining.indexOf(i), r=restD[pos]; el.style.transform="translate(calc(-50% + "+r[1]+"px), "+r[2]+"px) scale("+r[3]+") rotate("+r[0]+"deg)"; el.style.zIndex=String(45-pos); el.style.boxShadow=pos===0?"0 24px 60px rgba(24,22,19,.14)":"0 14px 36px rgba(24,22,19,.10)"; el.style.pointerEvents=pos===0?"auto":"none"; el.style.cursor=pos===0?"pointer":"default"}
+  });
+}
+tLayout();
+/* ---- reveal + closing draw ---- */
+if("IntersectionObserver" in window){
+  var io=new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll(".rv").forEach(function(el){io.observe(el)});
+  new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting)e.target.classList.add("in")})},{rootMargin:"0px 0px -20% 0px"}).observe(document.getElementById("closing"));
+}else{document.querySelectorAll(".rv").forEach(function(el){el.classList.add("in")});document.getElementById("closing").classList.add("in")}
+/* ---- ribbon drift ---- */
+var rt=document.getElementById("ribbon-text"), off=0;
+if(rt&&!reduced){(function drift(){off-=0.35;if(off<-620)off=0;rt.setAttribute("startOffset",off);requestAnimationFrame(drift)})()}
+/* ---- GitHub stars (live data, graceful) ---- */
+fetch("https://api.github.com/repos/realtonypark/caption").then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&typeof d.stargazers_count==="number")document.getElementById("stars").textContent=d.stargazers_count.toLocaleString()+" stars on GitHub"}).catch(function(){});
+})();
+</script>
+<footer class="sitefoot">
+  <a class="giant pencil" href="./" aria-label="Caption home">Caption</a>
+  <div class="footrow">
+    <span>© 2026 Caption · Built in the browser</span>
+    <nav style="display:flex;gap:20px" aria-label="Footer"><a href="#how">How it works</a><a href="#demo">Demo</a><a href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">GitHub</a><a href="#letter">Letter</a></nav>
+    <span>PDF · Paper · Post · News · Doc · Web → one shelf</span>
+  </div>
+</footer>
+</body>
+</html>
