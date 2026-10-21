@@ -16,9 +16,15 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from "firebase/firestore";
+import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 import { firebaseConfig } from "../firebase-config";
 
 const app = initializeApp(firebaseConfig);
+export const analytics: Promise<Analytics | null> = isSupported()
+  .then((supported) =>
+    supported && import.meta.env.PROD ? getAnalytics(app) : null,
+  )
+  .catch(() => null);
 export const auth = getAuth(app);
 export const database = initializeFirestore(app, {
   ignoreUndefinedProperties: true,
