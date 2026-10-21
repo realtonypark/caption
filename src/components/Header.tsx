@@ -57,6 +57,15 @@ export const Header = ({
         <span>Notepad</span>
       </Link>
       {account}
+      <a
+        href="https://github.com/realtonypark/caption"
+        target="_blank"
+        rel="noreferrer"
+        className="nav-link flex items-center gap-2"
+      >
+        <Icon name="github" filled />
+        <span>Open Source</span>
+      </a>
     </nav>
   </header>
 );
