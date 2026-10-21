@@ -1,0 +1,16 @@
+.github/workflows/pages.yml
+  h_05e5164a29872e 1-27
+site/index.html
+  h_05e5164a29872e 1-543
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a12c23b07ae7895028224cc79796b5391907543a",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
