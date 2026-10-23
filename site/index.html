@@ -60,7 +60,7 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
 @media(min-width:768px){.hero h1{font-size:76px}}
 @media(min-width:1024px){.hero h1{white-space:nowrap;position:relative;left:50%;transform:translateX(-50%);width:max-content;max-width:none}}
 /* you -> we */
-.youwe{position:relative;display:inline-block;min-width:1.52em;text-align:left}
+.youwe{position:relative;display:inline-block}
 .youwe .you{position:relative;display:inline-block}
 .youwe .you::after{content:"";position:absolute;left:-2%;right:-2%;top:54%;height:.07em;background:var(--coral);border-radius:99px;transform:scaleX(0);transform-origin:left center;animation:strike 7s var(--ease-std) infinite}
 .youwe .we{position:absolute;left:0;top:0;display:inline-block;opacity:0;transform:translateY(8px) rotate(-2deg);color:var(--ink)}
@@ -154,18 +154,6 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
 .margin-demo{width:190px;text-align:left;font-size:11.5px;line-height:1.6;color:var(--body-muted);background:#fff;border:1px solid var(--border);border-radius:14px;padding:10px 12px;box-shadow:0 3px 10px rgba(24,22,19,.04)}
 .margin-demo .hl{background:linear-gradient(transparent 55%,var(--highlight) 55%);padding:0 2px;color:var(--ink);font-weight:600}
 .margin-demo .note{margin-top:7px;border-top:1px dashed var(--border);padding-top:7px;color:var(--brown)}
-/* ============ RIBBON ============ */
-.ribbon-sec{padding:72px 0 8px;text-align:center;overflow:hidden}
-.ribbon-stage{position:relative;height:260px;margin-top:8px;overflow:hidden}
-.ribbon-svg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(1360px,150vw);min-width:900px;overflow:visible}
-.ribbon-track{stroke:var(--fg);stroke-width:30;fill:none;stroke-linecap:round;opacity:.92}
-.rtxt{font-family:var(--font-sans);dominant-baseline:middle}
-.speech-btn{position:absolute;top:49%;left:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:12px;min-width:248px;height:72px;padding:0 22px;justify-content:center;background:#fff;color:var(--fg);border:3px solid var(--fg);border-radius:999px;font-size:15px;font-weight:700;text-decoration:none;transition:background .14s linear,color .14s linear;z-index:3}
-.speech-btn:hover,.speech-btn:focus-visible{background:var(--fg);color:#fff}
-.bars{display:flex;gap:5px;align-items:center;height:32px}
-.bars i{display:block;width:4px;border-radius:99px;background:currentColor;animation:pulse .92s ease-in-out infinite}
-.bars i:nth-child(1),.bars i:nth-child(3){height:18px}.bars i:nth-child(2){height:32px;animation-delay:.12s}.bars i:nth-child(3){animation-delay:.24s}
-@keyframes pulse{0%,100%{transform:scaleY(.65)}50%{transform:scaleY(1.08)}}
 /* ============ DEMO STACK ============ */
 .demo-sec{padding:84px 0 20px}
 .demo-grid{max-width:80rem;margin:0 auto;padding:0 24px;display:grid;gap:48px;align-items:center}
@@ -214,13 +202,6 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
 .os{padding:56px 0;text-align:center}
 .ghbtn{display:inline-flex;align-items:center;gap:8px;margin-top:24px;border:1px solid #d4d4d4;background:#fff;border-radius:999px;padding:12px 20px;font-size:14px;font-weight:500;color:#171717;text-decoration:none;transition:all .15s var(--ease-std)}
 .ghbtn:hover{background:#171717;color:#fff;border-color:#171717}
-.letter-wrap{padding:90px 20px 60px}
-.letter{max-width:48rem;margin:0 auto;background-color:#fffaf0;background-image:linear-gradient(115deg,rgba(255,250,240,.92),rgba(246,236,218,.82));border:1px solid var(--manifesto-border);border-radius:3px;box-shadow:0 18px 50px rgba(68,54,36,.12);padding:40px 32px;color:var(--manifesto-ink);font-size:18px;line-height:32px}
-@media(min-width:640px){.letter{padding:48px 40px}}
-.letter p+p{margin-top:24px}
-.sign{margin-top:36px;display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.04em;color:var(--brown)}
-.sign .av{width:30px;height:30px;border-radius:50%;background:var(--fg);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;transition:transform .15s}
-.sign .av:hover{transform:translateY(-2px)}
 .closing{padding:110px 20px;text-align:center;background:#fff}
 .closing h2{font-family:var(--font-display);font-weight:500;font-size:clamp(42px,7vw,72px);line-height:1.3;color:var(--fg)}
 .inkbox{display:inline-block;width:.56em;height:.56em;border:.06em solid currentColor;border-radius:.11em;transform:translateY(.12em);position:relative;margin:0 .02em}
@@ -346,16 +327,6 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
   </article>
 </div>
 
-<!-- RIBBON -->
-<section class="ribbon-sec" aria-label="From skim to understanding">
-  <div class="col"><h2 class="sec dark"><span style="opacity:.45">Stop skimming alone.</span> Start thinking together.</h2>
-  <p class="sub" style="max-width:36rem">Caption reads the filler out and the meaning in — summaries that keep the argument, not just the gist.</p></div>
-  <div class="ribbon-stage" aria-hidden="true">
-    <svg class="ribbon-svg" viewBox="0 0 1180 360"><path class="ribbon-track" d="M-80 226 C -10 226 20 184 90 184 C 160 184 170 266 240 250 C 310 234 330 156 400 166 C 442 172 466 176 500 176 L 1180 150"/><text class="rtxt" fill="#fff" font-size="20" font-weight="600"><textPath href="#rp" id="ribbon-text">Highlight anything → Ask why → Test the claim → Keep the insight → &nbsp; Highlight anything → Ask why → Test the claim → Keep the insight →</textPath></text><path id="rp" d="M-40 190 L 1220 160" fill="none"/></svg>
-    <a class="speech-btn" href="#demo"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span> Try the margin</a>
-  </div>
-</section>
-
 <!-- DEMO STACK (Char) -->
 <section class="demo-sec" id="demo" aria-labelledby="demo-h">
   <div class="demo-grid">
@@ -363,7 +334,7 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
       <span class="annot pencil">your notes, on steroids! ↓</span>
       <h2 id="demo-h" style="margin-top:14px">An AI reading companion that gets things understood.</h2>
       <p>Watch a reading session do the joining-up for you. Four moments, on loop — or tap a card to jump in. This is showing, not telling: every scene below is the product, animated.</p>
-      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap"><a class="pill" href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">Open Caption <span aria-hidden="true">→</span></a><a class="pill light" href="#letter">Read the letter</a></div>
+      <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap"><a class="pill" href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">Open Caption <span aria-hidden="true">→</span></a><a class="pill light" href="#how">See how it works</a></div>
       <p style="font-size:13px;color:var(--grey-600);margin-top:16px">Demo timings shortened for the page. In Caption, answers stream with citations to the exact passage.</p>
     </div>
     <div class="stack-wrap rv">
@@ -390,24 +361,12 @@ mark{background:var(--highlight);border-radius:2px;padding:0 4px;box-decoration-
   </section>
 </div>
 
-<!-- MANIFESTO LETTER -->
-<div class="letter-wrap" id="letter">
-  <article class="letter rv" aria-label="A letter to readers">
-    <p>To the people who still read closely,</p>
-    <p>Reading matters more than readers. A reader alone is passive. A companion is something you think with. You stay present and in control while the page is still alive.</p>
-    <p>Most tools ask you to move your thinking into their ecosystem and rules. Your reading should stay in software you control, with a record that works in your browser, on your shelf.</p>
-    <p>Interfaces change. What you understood should remain yours. Highlight it, question it, keep it — <span class="hl-yellow">not in ten scattered places, but in one margin that remembers</span>.</p>
-    <p>Caption is our attempt to build that reading companion.</p>
-    <div class="sign"><span class="av" aria-hidden="true">C</span><span>— the Caption team · <a href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer" style="color:inherit">github.com/realtonypark/caption</a></span></div>
-  </article>
-</div>
-
 <!-- CLOSING -->
 <section class="closing" id="closing" aria-label="Get started">
   <h2 aria-label="To read, to understood.">To read <span class="inkbox" aria-hidden="true"></span> to underst<span class="inkbox" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12 9 17 20 6" pathLength="30"/></svg></span>d.</h2>
   <p style="margin-top:20px;font-size:18px;line-height:28px;color:var(--grey-600)">Stop growing your “read later” list.<br>It is time to understand what you read.</p>
   <a class="pill" href="#demo" style="margin-top:28px">Start reading together <span aria-hidden="true">→</span></a>
-  <p style="margin-top:14px;font-size:13px;color:var(--grey-500)">What are <span style="text-decoration:line-through;text-decoration-color:var(--coral);text-decoration-thickness:2px">you</span> <span style="border-bottom:3px solid var(--coral);font-weight:700;color:var(--ink)">we</span> reading next?</p>
+  <p style="margin-top:14px;font-size:13px;color:var(--grey-500)">What are <span class="youwe"><span class="you">you</span><span class="we">we<svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 Q 30 3 52 7 T 98 6"/></svg></span></span> reading next?</p>
 </section>
 
 <script>
@@ -524,9 +483,6 @@ if("IntersectionObserver" in window){
   document.querySelectorAll(".rv").forEach(function(el){io.observe(el)});
   new IntersectionObserver(function(en){en.forEach(function(e){if(e.isIntersecting)e.target.classList.add("in")})},{rootMargin:"0px 0px -20% 0px"}).observe(document.getElementById("closing"));
 }else{document.querySelectorAll(".rv").forEach(function(el){el.classList.add("in")});document.getElementById("closing").classList.add("in")}
-/* ---- ribbon drift ---- */
-var rt=document.getElementById("ribbon-text"), off=0;
-if(rt&&!reduced){(function drift(){off-=0.35;if(off<-620)off=0;rt.setAttribute("startOffset",off);requestAnimationFrame(drift)})()}
 /* ---- GitHub stars (live data, graceful) ---- */
 fetch("https://api.github.com/repos/realtonypark/caption").then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&typeof d.stargazers_count==="number")document.getElementById("stars").textContent=d.stargazers_count.toLocaleString()+" stars on GitHub"}).catch(function(){});
 })();
@@ -535,7 +491,7 @@ fetch("https://api.github.com/repos/realtonypark/caption").then(function(r){retu
   <a class="giant pencil" href="./" aria-label="Caption home">Caption</a>
   <div class="footrow">
     <span>© 2026 Caption · Built in the browser</span>
-    <nav style="display:flex;gap:20px" aria-label="Footer"><a href="#how">How it works</a><a href="#demo">Demo</a><a href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">GitHub</a><a href="#letter">Letter</a></nav>
+    <nav style="display:flex;gap:20px" aria-label="Footer"><a href="#how">How it works</a><a href="#demo">Demo</a><a href="https://github.com/realtonypark/caption" target="_blank" rel="noreferrer">GitHub</a></nav>
     <span>PDF · Paper · Post · News · Doc · Web → one shelf</span>
   </div>
 </footer>
