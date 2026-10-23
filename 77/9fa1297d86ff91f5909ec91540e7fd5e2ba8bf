@@ -1,0 +1,14 @@
+site/index.html
+  h_05e5164a29872e 63,337,369,494
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "779fa1297d86ff91f5909ec91540e7fd5e2ba8bf",
+  "prompts": {},
+  "humans": {
+    "h_05e5164a29872e": {
+      "author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}
